@@ -32,11 +32,11 @@
 #define HomogeneousField
 #endif
 
-#include "KFPTrack.h"
-#include "KFPVertex.h"
-#include "KFParticle.h"
-#include "KFParticleBase.h"
-#include "KFVertex.h"
+// #include "KFParticle/KFPTrack.h"
+// #include "KFParticle/KFPVertex.h"
+#include <KFParticle.h>
+// #include "KFParticle/KFParticleBase.h"
+// #include "KFParticle/KFVertex.h"
 
 using namespace o2;
 using namespace o2::framework;
