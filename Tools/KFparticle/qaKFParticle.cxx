@@ -19,24 +19,27 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
+#include "ReconstructionDataFormats/Track.h"
 // includes O2Physics
-#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
+#include "TableHelper.h"
 
 // includes KFParticle
 #ifndef HomogeneousField
 #define HomogeneousField
 #endif
 
-#include <KFParticle/KFParticle.h>
-#include "KFParticle/KFPTrack.h"
-#include "KFParticle/KFPVertex.h"
-#include "KFParticle/KFParticleBase.h"
-#include "KFParticle/KFVertex.h"
+#include <KFParticle.h>
+#include "KFPTrack.h"
+#include "KFPVertex.h"
+#include "KFParticleBase.h"
+#include "KFVertex.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -48,6 +51,9 @@ struct qaKFParticle {
   // general steering settings
   Configurable<bool> isRun3{"isRun3", false, "Is Run3 dataset"}; 
   Configurable<double> magneticField{"d_bz", 5., "magnetic field"}; // ToDo: Can be modified to be taken per timestamp from CCDB. For now only configurable.
+
+  // Histogram Configurables
+  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
 
   // option to select good events
   Configurable<bool> eventSelection{"eventSelection", true, "select good events"}; // currently only sel8 is defined for run3
@@ -88,12 +94,12 @@ struct qaKFParticle {
     const AxisSpec axisVertexNumContrib{200, 0, 200, "Number Of contributors to the PV"};
     const AxisSpec axisVertexCov{100, -0.005, 0.005};
 
-    const AxisSpec axisParX{300, 0, 600, "#it{x} [cm]"};
+    const AxisSpec axisParX{300, -0.5, 0.5, "#it{x} [cm]"};
     const AxisSpec axisParY{200, -0.5, 0.5, "#it{y} [cm]"};
     const AxisSpec axisParZ{200, -11., 11., "#it{z} [cm]"};
-    const AxisSpec axisParPX{VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0, "#it{p}_{x} [GeV/c]"};
-    const AxisSpec axisParPY{VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0, "#it{p}_{y} [GeV/c]"};
-    const AxisSpec axisParPZ{VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0, "#it{p}_{z} [GeV/c]"};
+    const AxisSpec axisParPX{binsPt, "#it{p}_{x} [GeV/c]"};
+    const AxisSpec axisParPY{binsPt, "#it{p}_{y} [GeV/c]"};
+    const AxisSpec axisParPZ{binsPt, "#it{p}_{z} [GeV/c]"};
 
     // collisions
     histos.add("Events/posX", "", kTH1D, {axisVertexPosX});
@@ -127,6 +133,9 @@ struct qaKFParticle {
     histos.add("Tracks/x", "track #it{x} position at dca in local coordinate system", kTH1D, {axisParX});
     histos.add("Tracks/y", "track #it{y} position at dca in local coordinate system", kTH1D, {axisParY});
     histos.add("Tracks/z", "track #it{z} position at dca in local coordinate system", kTH1D, {axisParZ});
+    histos.add("Tracks/px", "track #it{p_{x}} momentum at dca in local coordinate system", kTH1D, {axisParPX});
+    histos.add("Tracks/py", "track #it{p_{y}} momentum at dca in local coordinate system", kTH1D, {axisParPY});
+    histos.add("Tracks/pz", "track #it{p_{z}} momentum at dca in local coordinate system", kTH1D, {axisParPZ});
     histos.add("Tracks/dcaXY", "distance of closest approach in #it{xy} plane;#it{dcaXY} [cm];", kTH1D, {{200, -0.15, 0.15}});
     histos.add("Tracks/dcaZ", "distance of closest approach in #it{z};#it{dcaZ} [cm];", kTH1D, {{200, -0.15, 0.15}});
     histos.add("Tracks/length", "track length in cm;#it{Length} [cm];", kTH1D, {{400, 0, 1000}});
@@ -137,7 +146,7 @@ struct qaKFParticle {
     histos.add("TracksKF/px", "track #it{p_{x}} momentum at dca in local coordinate system", kTH1D, {axisParPX});
     histos.add("TracksKF/py", "track #it{p_{y}} momentum at dca in local coordinate system", kTH1D, {axisParPY});
     histos.add("TracksKF/pz", "track #it{p_{z}} momentum at dca in local coordinate system", kTH1D, {axisParPZ});
-    histos.add("TracksKF/chi2perNDF", "Chi2/NDF of the track;#it{chi2/ndf};", kTH1D, {{200, -10., 10.}});
+    histos.add("TracksKF/chi2perNDF", "Chi2/NDF of the track;#it{chi2/ndf};", kTH1D, {{200, 0.8, 1.2}});
     histos.add("TracksKF/dcaXY", "distance of closest approach in #it{xy} plane;#it{dcaXY} [cm];", kTH1D, {{200, -0.15, 0.15}});
     histos.add("TracksKF/dcaZ", "distance of closest approach in #it{z};#it{dcaZ} [cm];", kTH1D, {{200, -0.15, 0.15}});
     histos.add("TracksKF/length", "track length in cm;#it{Length} [cm];", kTH1D, {{400, 0, 1000}});
@@ -178,9 +187,11 @@ struct qaKFParticle {
       KFParticle KFPV(kfpVertex);
 
       // fill collision parameters
-      histos.fill(HIST("Events/posX"), collision.GetX());
-      histos.fill(HIST("Events/posY"), collision.GetY());
-      histos.fill(HIST("Events/posZ"), collision.GetZ());
+      histos.fill(HIST("Events/posX"), collision.posX());
+      histos.fill(HIST("Events/posY"), collision.posY());
+      histos.fill(HIST("Events/posZ"), collision.posZ());
+      histos.fill(HIST("Events/posXY"), collision.posX(), collision.posY());
+      histos.fill(HIST("Events/posXYZ"), collision.posX(), collision.posY(),collision.posZ());
       histos.fill(HIST("Events/nContrib"), collision.numContrib());
       histos.fill(HIST("Events/vertexChi2"), collision.chi2());
       histos.fill(HIST("Events/covXX"), collision.covXX());
@@ -190,10 +201,10 @@ struct qaKFParticle {
       histos.fill(HIST("Events/covYZ"), collision.covYZ());
       histos.fill(HIST("Events/covZZ"), collision.covZZ());
 
-      histos.fill(HIST("EventsKF/posX"), kfpVertex.posX());
-      histos.fill(HIST("EventsKF/posY"), kfpVertex.posY());
-      histos.fill(HIST("EventsKF/posZ"), kfpVertex.posZ());
-      histos.fill(HIST("EventsKF/posXY"), kfpVertex.posX(), kfpVertex.posY());
+      histos.fill(HIST("EventsKF/posX"), kfpVertex.GetX());
+      histos.fill(HIST("EventsKF/posY"), kfpVertex.GetY());
+      histos.fill(HIST("EventsKF/posZ"), kfpVertex.GetZ());
+      histos.fill(HIST("EventsKF/posXY"), kfpVertex.GetX(), kfpVertex.GetY());
       histos.fill(HIST("EventsKF/nContrib"), kfpVertex.GetNContributors());
       histos.fill(HIST("EventsKF/vertexChi2"), kfpVertex.GetChi2());
       histos.fill(HIST("EventsKF/covXX"), kfpVertex.GetCovariance(0));
@@ -209,9 +220,10 @@ struct qaKFParticle {
         array<float, 3> trkpos_par;
         array<float, 3> trkmom_par;
         array<float, 21> trk_cov;
-        track.getXYZGlo(pos_prong0);
-        track.getPxPyPzGlo(trkmom_par);
-        track.getCovXYZPxPyPzGlo(trk_cov);
+        auto trackparCov = getTrackParCov(track);
+        trackparCov.getXYZGlo(trkpos_par);
+        trackparCov.getPxPyPzGlo(trkmom_par);
+        trackparCov.getCovXYZPxPyPzGlo(trk_cov);
         float trkpar_KF[6] = {trkpos_par[0], trkpos_par[1], trkpos_par[2],
                                    trkmom_par[0], trkmom_par[1], trkmom_par[2]};
         float trkcov_KF[21];
@@ -230,6 +242,9 @@ struct qaKFParticle {
         histos.fill(HIST("Tracks/x"), track.x());
         histos.fill(HIST("Tracks/y"), track.y());
         histos.fill(HIST("Tracks/z"), track.z());
+        histos.fill(HIST("Tracks/px"), track.px());
+        histos.fill(HIST("Tracks/py"), track.py());
+        histos.fill(HIST("Tracks/pz"), track.pz());
         histos.fill(HIST("Tracks/dcaXY"), track.dcaXY());
         histos.fill(HIST("Tracks/dcaZ"), track.dcaZ());
         histos.fill(HIST("Tracks/length"), track.length());
