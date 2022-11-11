@@ -9,34 +9,153 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef O2_ANALYSIS_DGPID_SELECTOR_
-#define O2_ANALYSIS_DGPID_SELECTOR_
+#ifndef PWGUD_CORE_DGPIDSELECTOR_H_
+#define PWGUD_CORE_DGPIDSELECTOR_H_
 
 #include <gandiva/projector.h>
+#include <string>
+#include <vector>
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
 #include "PWGUD/DataModel/UDTables.h"
-#include "DGAnaparHolder.h"
 
 using namespace o2;
 
-using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTrackCollisionIDs, aod::UDTracksPID>;
+using UDTracksFull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksDCA>;
 using UDTrackFull = UDTracksFull::iterator;
 
+const int numDGPIDCutParameters = 9;
 float particleMass(TDatabasePDG* pdg, int pid);
 
 // -----------------------------------------------------------------------------
+//  numPart:    Particle number to which the parameters apply
+//  cutPID:     DPG code of particle hypothesis for nSigma calculation
+//  cutDetector:detector: 1: TPC
+//                        2: TOF
+//  cutType:    cut type:  1: pt and nSigma within limits
+//                        -1: nSigma out of limits within pt range
+//                         2: pt and detector signal  within limits
+//                        -2: detector signal out of limits within pt range
+//  cutApply:   How to apply cut: 0: not active
+//                                1: if information available
+//                                2: return false if information not available
+//  ptMin, ptMax, nSigmaTPCmin, nSigmaTPCmax, nSigmaTOFmin, nSigmaTOFmax: cut limits
+struct DGPIDCut {
+
+ public:
+  // constructor
+  DGPIDCut();
+  DGPIDCut(float numPart, float cutPID, float cutDetector, float cutType, float cutApply,
+           float ptMin, float ptMax, float nSigmamin, float nSigmamax);
+  explicit DGPIDCut(float* cutValues);
+  ~DGPIDCut();
+
+  // setters
+
+  // getters
+  void Print();
+  int nPart() { return mnumPart; }
+  int cutPID() { return mcutPID; }
+  int cutDetector() { return mcutDetector; }
+  int cutType() { return mcutType; }
+  int cutApply() { return mcutApply; }
+  float cutPtMin() { return mptMin; }
+  float cutPtMax() { return mptMax; }
+  float cutdetValueMin() { return mdetValuemin; }
+  float cutdetValueMax() { return mdetValuemax; }
+
+ private:
+  int mnumPart;
+  int mcutPID;
+  int mcutDetector;
+  int mcutType;
+  int mcutApply;
+  float mptMin;
+  float mptMax;
+  float mdetValuemin;
+  float mdetValuemax;
+
+  // ClassDefNV(DGPIDCut, 1);
+};
+
+// =============================================================================
+// Cuts in mPIDCuts are combined (&&)
+struct DGPIDCuts {
+ public:
+  // constructor
+  DGPIDCuts();
+  explicit DGPIDCuts(std::vector<float> PIDCutValues);
+  ~DGPIDCuts();
+
+  // setter
+  void clear()
+  {
+    mDGPIDCuts.clear();
+  }
+  void setPIDCuts(std::vector<float> PIDCutValues);
+
+  // getter
+  void Print();
+  std::vector<DGPIDCut> Cuts() { return mDGPIDCuts; }
+
+ private:
+  std::vector<DGPIDCut> mDGPIDCuts;
+
+  // ClassDefNV(DGPIDCuts, 1);
+};
+
+// =============================================================================
+// object to hold customizable analysis parameters
+struct DGAnaparHolder {
+ public:
+  // constructor
+  DGAnaparHolder();
+  DGAnaparHolder(int nCombine, std::vector<float> DGPIDs, std::vector<float> DGPIDCutValues);
+  ~DGAnaparHolder();
+
+  // getter
+  void Print();
+  int nCombine() const { return mNCombine; }
+  std::vector<int> netCharges() { return mNetCharges; }
+  std::vector<float> PIDs() { return mDGPIDs; }
+  DGPIDCuts PIDCuts();
+  std::vector<int> uniquePermutations();
+
+ private:
+  // helper functions
+  void permutations(std::vector<uint>& ref, int n0, int np, std::vector<std::vector<uint>>& perms);
+  int permutations(int n0, std::vector<std::vector<uint>>& perms);
+  void makeUniquePermutations();
+
+  // number of tracks to combine
+  int mNCombine;
+
+  // net charge of all tracks
+  std::vector<int> mNetCharges;
+
+  // PID information
+  std::vector<float> mDGPIDs;
+  std::vector<float> mDGPIDCutValues;
+
+  // unique permutations
+  std::vector<int> muniquePerms;
+
+  // ClassDefNV(DGAnaparHolder, 1);
+};
+
+// =============================================================================
 // a structure which holds the indices of tracks and their invariant mass
 struct DGParticle {
  public:
-  DGParticle() = default;
+  DGParticle();
   DGParticle(TDatabasePDG* pdg, DGAnaparHolder anaPars, UDTracksFull const& tracks, std::vector<uint> comb);
+  ~DGParticle();
 
   // getter
+  void Print();
   std::vector<uint> trkinds() { return mtrkinds; }
   float M() { return mIVM.M(); }
   float Perp() { return mIVM.Perp(); }
-  void Print();
 
  private:
   // invariant mass
@@ -45,27 +164,31 @@ struct DGParticle {
   // indices of tracks included
   std::vector<uint> mtrkinds;
 
-  ClassDefNV(DGParticle, 1);
+  // ClassDefNV(DGParticle, 1);
 };
 
-// -----------------------------------------------------------------------------
+// =============================================================================
 // A class to check PIDs of tracks and provide track combinations
 struct DGPIDSelector {
  public:
   DGPIDSelector();
+  ~DGPIDSelector();
 
   // setters
-  void init(DGAnaparHolder anaPars)
-  {
-    mAnaPars = anaPars;
-    mIVMs.clear();
-  };
+  void init(DGAnaparHolder anaPars);
 
   // getters
-  std::vector<DGParticle> IVMs() { return mIVMs; }
-  float getTPCnSigma(UDTrackFull track, int hypo);
+  void Print();
+  bool isGoodCombination(std::vector<uint> comb, UDTracksFull const& tracks);
   bool isGoodTrack(UDTrackFull track, int cnt);
-  int computeIVMs(int nCombine, UDTracksFull const& tracks);
+  int computeIVMs(UDTracksFull const& tracks);
+
+  DGAnaparHolder getAnaPars() { return mAnaPars; }
+  float getTPCnSigma(UDTrackFull track, int pid);
+  float getTOFnSigma(UDTrackFull track, int pid);
+  std::vector<DGParticle> IVMs() { return mIVMs; }
+
+  int pid2ind(int pid);
 
  private:
   // analysis parameters
@@ -76,18 +199,15 @@ struct DGPIDSelector {
 
   // particle properties
   TDatabasePDG* fPDG;
-  int pid2ind(int pid);
 
   // helper functions for computeIVMs
-  void permutations(std::vector<uint>& ref, int n0, int np, std::vector<std::vector<uint>>& perms);
-  int permutations(int n0, std::vector<std::vector<uint>>& perms);
   void combinations(int n0, std::vector<uint>& pool, int np, std::vector<uint>& inds, int n,
                     std::vector<std::vector<uint>>& combs);
   int combinations(int n0, int np, std::vector<std::vector<uint>>& combs);
-  std::vector<std::vector<uint>> combinations(int nCombine, int nPool);
+  std::vector<std::vector<uint>> combinations(int nPool);
 
-  ClassDefNV(DGPIDSelector, 1);
+  // ClassDefNV(DGPIDSelector, 1);
 };
 
 // -----------------------------------------------------------------------------
-#endif // O2_ANALYSIS_DGPID_SELECTOR_
+#endif // PWGUD_CORE_DGPIDSELECTOR_H_

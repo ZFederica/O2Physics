@@ -9,8 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "DGAnaparHolder.h"
+#pragma link off all globals;
+#pragma link off all classes;
+#pragma link off all functions;
 
-// getter
-int DGAnaparHolder::nCombine() const { return mNCombine; }
-std::vector<float> DGAnaparHolder::TPCnSigmas() const { return mTPCnSigmas; }
+#pragma link C++ class JFFlucAnalysis + ;
+#pragma link C++ class JHistManager + ;

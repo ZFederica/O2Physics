@@ -99,8 +99,8 @@ using MyBarrelTracksSelectedTiny = soa::Join<aod::Tracks, aod::TracksExtra, aod:
                                              aod::pidTOFEl, aod::pidTOFMu, aod::pidTOFPi,
                                              aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta,
                                              aod::DQBarrelTrackCuts>;
-using MyMuons = aod::FwdTracks;
-using MyMuonsSelected = soa::Join<aod::FwdTracks, aod::DQMuonsCuts>;
+using MyMuons = soa::Join<aod::FwdTracks, aod::FwdTracksDCA>;
+using MyMuonsSelected = soa::Join<aod::FwdTracks, aod::FwdTracksDCA, aod::DQMuonsCuts>;
 
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
@@ -608,7 +608,7 @@ struct DQFilterPPTask {
     //       start with all configured barrel selections and then continue with those from muons
     //       The configured order has to be in sync with that implemented in the cefp task and can be done
     //       by preparing a dedicated json configuration file
-    std::vector<bool> decisions(kNTriggersDQ, false); // event decisions to be transmited to CEFP
+    std::vector<bool> decisions(kNTriggersDQ, false); // event decisions to be transmitted to CEFP
     uint64_t filter = 0;
     for (int i = 0; i < fNBarrelCuts; i++) {
       if (objCountersBarrel[i] >= fBarrelNreqObjs[i]) {

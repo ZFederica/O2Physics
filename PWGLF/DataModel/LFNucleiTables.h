@@ -27,7 +27,7 @@ namespace o2::aod
 {
 namespace fullEvent
 {                                 // Events
-DECLARE_SOA_INDEX_COLUMN(BC, bc); //! Most probably BC to where this collision has occured
+DECLARE_SOA_INDEX_COLUMN(BC, bc); //! Most probably BC to where this collision has occurred
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(V0M, v0m, int);
@@ -69,6 +69,8 @@ DECLARE_SOA_COLUMN(TPCExpSignalDiffPr, tpcExpSignalDiffPr, float);
 DECLARE_SOA_COLUMN(TPCExpSignalDiffDe, tpcExpSignalDiffDe, float);
 DECLARE_SOA_COLUMN(TOFExpSignalDiffPr, tofExpSignalDiffPr, float);
 DECLARE_SOA_COLUMN(TOFExpSignalDiffDe, tofExpSignalDiffDe, float);
+DECLARE_SOA_COLUMN(IsEvTimeTOF, isEvTimeTOF, bool);
+DECLARE_SOA_COLUMN(IsEvTimeT0AC, isEvTimeT0AC, bool);
 DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);
 DECLARE_SOA_COLUMN(DCAxy, dcaxy, float);
 DECLARE_SOA_COLUMN(DCAz, dcaz, float);
@@ -104,6 +106,8 @@ DECLARE_SOA_TABLE(LfCandNucleusFull, "AOD", "LFNUCL",
                   full::NSigTOFDe, full::NSigTOF3He,
                   full::TPCExpSignalDiffPr, full::TPCExpSignalDiffDe,
                   full::TOFExpSignalDiffPr, full::TOFExpSignalDiffDe,
+                  full::IsEvTimeTOF,
+                  full::IsEvTimeT0AC,
                   full::HasTOF,
                   full::TPCInnerParam,
                   full::TPCSignal,

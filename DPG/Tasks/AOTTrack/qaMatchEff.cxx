@@ -36,10 +36,14 @@ struct qaMatchEff {
   // Track selections
   Configurable<bool> b_useTrackSelections{"b_useTrackSelections", false, "Boolean to switch the track selections on/off."};
   // kinematics
+  Configurable<float> ptMinCutInnerWallTPC{"ptMinCutInnerWallTPC", 0.1f, "Minimum transverse momentum calculated at the inner wall of TPC (GeV/c)"};
   Configurable<float> ptMinCut{"ptMinCut", 0.1f, "Minimum transverse momentum (GeV/c)"};
   Configurable<float> ptMaxCut{"ptMaxCut", 100.f, "Maximum transverse momentum (GeV/c)"};
   Configurable<float> etaMinCut{"etaMinCut", -2.0f, "Minimum pseudorapidity"};
   Configurable<float> etaMaxCut{"etaMaxCut", 2.0f, "Maximum pseudorapidity"};
+  Configurable<float> dcaXYMaxCut{"dcaXYMaxCut", 1000000.0f, "Maximum dcaXY (cm)"};
+  // Configurable<float> dcaMaxCut{"dcaMaxCut", 1000000.0f, "Maximum dca (cm)"};
+  Configurable<bool> b_useTPCinnerWallPt{"b_useTPCinnerWallPt", false, "Boolean to switch the usage of pt calculated at the inner wall of TPC on/off."};
   // TPC
   Configurable<int> tpcNClusterMin{"tpcNClusterMin", 0, "Minimum number of clusters in TPC"};
   Configurable<int> tpcNCrossedRowsMin{"tpcNCrossedRowsMin", 70, "Minimum number of crossed rows in TPC"};
@@ -48,7 +52,10 @@ struct qaMatchEff {
   // ITS
   Configurable<float> itsChi2Max{"itsChi2Max", 36.0f, "Maximum chi2 in ITS"};
   Configurable<int> customITShitmap{"customITShitmap", 3, "ITS hitmap (think to the binary representation)"};
-  Configurable<int> customMinITShits{"customMinITShits", 1, "Minimum number of layers crossed by a track among those in \"customITShitmap\""}; //
+  Configurable<int> customMinITShits{"customMinITShits", 1, "Minimum number of layers crossed by a track among those in \"customITShitmap\""};
+  // Other track settings
+  //  TRD presence
+  Configurable<int> isTRDThere{"isTRDThere", 2, "Integer to turn the presence of TRD off, on, don't care (0,1,anything else)"};
   //
   Configurable<bool> isitMC{"isitMC", false, "Reading MC files, data if false"};
   Configurable<bool> doDebug{"doDebug", false, "Flag of debug information"};
@@ -86,6 +93,10 @@ struct qaMatchEff {
   //
   // Track selection object
   TrackSelection cutObject;
+  //
+  //
+  // pt calculated at the inner wall of TPC
+  float trackPtInParamTPC = -1.;
   // Init function
   //
   void init(InitContext&)
@@ -109,6 +120,7 @@ struct qaMatchEff {
       // kinematics
       cutObject.SetEtaRange(etaMinCut, etaMaxCut);
       cutObject.SetPtRange(ptMinCut, ptMaxCut);
+      cutObject.SetMaxDcaXY(dcaXYMaxCut); /// max for dca implementend by hand in isTrackSelectedKineCuts
       // TPC
       cutObject.SetMinNClustersTPC(tpcNClusterMin);
       cutObject.SetMinNCrossedRowsTPC(tpcNCrossedRowsMin);
@@ -304,6 +316,15 @@ struct qaMatchEff {
 
   } // end initMC
 
+  /// Function calculatind the pt at inner wall of TPC
+  template <typename T>
+  float computePtInParamTPC(T& track)
+  {
+    /// Using pt calculated at the inner wall of TPC
+    /// Caveat: tgl still from tracking: this is not the value of tgl at the inner wall of TPC
+    return track.tpcInnerParam() / sqrt(1.f + track.tgl() * track.tgl());
+  }
+
   /// Function applying the kinematic selections
   template <typename T>
   bool isTrackSelectedKineCuts(T& track)
@@ -312,8 +333,16 @@ struct qaMatchEff {
       return true; // no track selections applied
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kPtRange))
       return false;
+    if (b_useTPCinnerWallPt && computePtInParamTPC(track) < ptMinCutInnerWallTPC) {
+      return false; // pt selection active only if the required pt is that calculated at the inner wall of TPC
+    }
     if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kEtaRange))
       return false;
+    if (!cutObject.IsSelected(track, TrackSelection::TrackCuts::kDCAxy))
+      return false;
+    // dcaZ selection to simulate the dca cut in QC ()
+    // if ( abs(track.dcaZ()) < sqrt( dcaMaxCut*dcaMaxCut - track.dcaXY()*track.dcaXY() ) )
+    //  return false;
     return true;
   }
   /// Function applying the TPC selections
@@ -349,14 +378,14 @@ struct qaMatchEff {
   // //
   // // fill histos for TPC (all tracks)
   // void fillAllTPC(){
-  //   histos.get<TH1>(HIST("MC/pthist_tpc"))->Fill(jT.pt());
+  //   histos.get<TH1>(HIST("MC/pthist_tpc"))->Fill(trackPt);
   //   histos.get<TH1>(HIST("MC/phihist_tpc"))->Fill(jT.phi());
   //   histos.get<TH1>(HIST("MC/etahist_tpc"))->Fill(jT.eta());
   // }
   // //
   // // fill histos for TPC+ITS (all tracks)
   // void fillAllTPCITS(){
-  //   histos.get<TH1>(HIST("MC/pthist_tpcits"))->Fill(jT.pt());
+  //   histos.get<TH1>(HIST("MC/pthist_tpcits"))->Fill(trackPt);
   //   histos.get<TH1>(HIST("MC/phihist_tpcits"))->Fill(jT.phi());
   //   histos.get<TH1>(HIST("MC/etahist_tpcits"))->Fill(jT.eta());
   // }
@@ -377,8 +406,10 @@ struct qaMatchEff {
     //
     //
     for (auto& jT : jTracks) {
-      // kinematic track seletions for all tracks
-      if (!isTrackSelectedKineCuts(jT))
+      // choose if we keep the track according to the TRD presence requirement
+      if ((isTRDThere == 1) && !jT.hasTRD())
+        continue;
+      if ((isTRDThere == 0) && jT.hasTRD())
         continue;
 
       if (!jT.has_mcParticle()) {
@@ -387,6 +418,19 @@ struct qaMatchEff {
           LOGF(warning, " N.%d track without MC particle, skipping...", countNoMC);
         continue;
       }
+      //
+      // pt from full tracking or from TPCinnerWallPt
+      float trackPt = jT.pt();
+      if (b_useTPCinnerWallPt) {
+        /// Using pt calculated at the inner wall of TPC
+        /// Caveat: tgl still from tracking: this is not the value of tgl at the inner wall of TPC
+        trackPt = computePtInParamTPC(jT);
+      }
+
+      // kinematic track seletions for all tracks
+      if (!isTrackSelectedKineCuts(jT))
+        continue;
+
       auto mcpart = jT.mcParticle();
       tpPDGCode = TMath::Abs(mcpart.pdgCode());
       if (mcpart.isPhysicalPrimary()) {
@@ -405,24 +449,24 @@ struct qaMatchEff {
       //
       // all tracks, no conditions
       if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-        histos.get<TH1>(HIST("MC/pthist_tpc"))->Fill(jT.pt());
+        histos.get<TH1>(HIST("MC/pthist_tpc"))->Fill(trackPt);
         histos.get<TH1>(HIST("MC/phihist_tpc"))->Fill(jT.phi());
         histos.get<TH1>(HIST("MC/etahist_tpc"))->Fill(jT.eta());
         if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpcits"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpcits"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpcits"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpcits"))->Fill(jT.eta());
         } //  end if ITS
       }   //  end if TPC
       //
       // all tracks with pt>0.5
-      if (jT.pt() > 0.5) {
+      if (trackPt > 0.5) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_05"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_05"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_05"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_05"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_05"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_05"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_05"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_05"))->Fill(jT.eta());
           } //  end if ITS
@@ -432,11 +476,11 @@ struct qaMatchEff {
       // positive only
       if (jT.signed1Pt() > 0) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_pos"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_pos"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_pos"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_pos"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_pos"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_pos"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_pos"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_pos"))->Fill(jT.eta());
           } //  end if ITS
@@ -447,11 +491,11 @@ struct qaMatchEff {
       // negative only
       if (jT.signed1Pt() < 0) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_neg"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_neg"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_neg"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_neg"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_neg"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_neg"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_neg"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_neg"))->Fill(jT.eta());
           } //  end if ITS
@@ -462,11 +506,11 @@ struct qaMatchEff {
       // only primaries
       if (mcpart.isPhysicalPrimary()) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_prim"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_prim"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_prim"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_prim"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_prim"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_prim"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_prim"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_prim"))->Fill(jT.eta());
           } //  end if ITS
@@ -476,11 +520,11 @@ struct qaMatchEff {
       // only secondaries from decay
       else if (mcpart.getProcess() == 4) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_secd"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_secd"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_secd"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_secd"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_secd"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_secd"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_secd"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_secd"))->Fill(jT.eta());
           } //  end if ITS
@@ -489,11 +533,11 @@ struct qaMatchEff {
         // only secondaries from material
         else {
           if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpc_secm"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpc_secm"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpc_secm"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpc_secm"))->Fill(jT.eta());
             if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-              histos.get<TH1>(HIST("MC/pthist_tpcits_secm"))->Fill(jT.pt());
+              histos.get<TH1>(HIST("MC/pthist_tpcits_secm"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/phihist_tpcits_secm"))->Fill(jT.phi());
               histos.get<TH1>(HIST("MC/etahist_tpcits_secm"))->Fill(jT.eta());
             } //  end if ITS
@@ -505,11 +549,11 @@ struct qaMatchEff {
       // protons only
       if (tpPDGCode == 2212) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_P"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_P"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_P"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_P"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_P"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_P"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_P"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_P"))->Fill(jT.eta());
           } //  end if ITS
@@ -521,11 +565,11 @@ struct qaMatchEff {
         //
         // all tracks
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_pi"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_pi"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_pi"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_pi"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_pi"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_pi"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_pi"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_pi"))->Fill(jT.eta());
           } //  end if ITS
@@ -534,11 +578,11 @@ struct qaMatchEff {
         // only primary pions
         if (mcpart.isPhysicalPrimary()) {
           if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpc_pi_prim"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpc_pi_prim"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpc_pi_prim"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpc_pi_prim"))->Fill(jT.eta());
             if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-              histos.get<TH1>(HIST("MC/pthist_tpcits_pi_prim"))->Fill(jT.pt());
+              histos.get<TH1>(HIST("MC/pthist_tpcits_pi_prim"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/phihist_tpcits_pi_prim"))->Fill(jT.phi());
               histos.get<TH1>(HIST("MC/etahist_tpcits_pi_prim"))->Fill(jT.eta());
             } //  end if ITS
@@ -548,11 +592,11 @@ struct qaMatchEff {
         // only secondary pions from decay
         else if (mcpart.getProcess() == 4) {
           if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpc_pi_secd"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpc_pi_secd"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpc_pi_secd"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpc_pi_secd"))->Fill(jT.eta());
             if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-              histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secd"))->Fill(jT.pt());
+              histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secd"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/phihist_tpcits_pi_secd"))->Fill(jT.phi());
               histos.get<TH1>(HIST("MC/etahist_tpcits_pi_secd"))->Fill(jT.eta());
             } //  end if ITS
@@ -561,11 +605,11 @@ struct qaMatchEff {
           // only secondary pions from material
           else {
             if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-              histos.get<TH1>(HIST("MC/pthist_tpc_pi_secm"))->Fill(jT.pt());
+              histos.get<TH1>(HIST("MC/pthist_tpc_pi_secm"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/phihist_tpc_pi_secm"))->Fill(jT.phi());
               histos.get<TH1>(HIST("MC/etahist_tpc_pi_secm"))->Fill(jT.eta());
               if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-                histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secm"))->Fill(jT.pt());
+                histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secm"))->Fill(trackPt);
                 histos.get<TH1>(HIST("MC/phihist_tpcits_pi_secm"))->Fill(jT.phi());
                 histos.get<TH1>(HIST("MC/etahist_tpcits_pi_secm"))->Fill(jT.eta());
               } //  end if ITS
@@ -587,12 +631,12 @@ struct qaMatchEff {
           pdg_fill = -10.0;
         //
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_nopi"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_nopi"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_nopi"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_nopi"))->Fill(jT.eta());
           histos.get<TH1>(HIST("MC/pdghist_den"))->Fill(pdg_fill);
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_nopi"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_nopi"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_nopi"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_nopi"))->Fill(jT.eta());
             histos.get<TH1>(HIST("MC/pdghist_num"))->Fill(pdg_fill);
@@ -603,11 +647,11 @@ struct qaMatchEff {
       // kaons only
       if (tpPDGCode == 321) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_K"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_K"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_K"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_K"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_K"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_K"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_K"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_K"))->Fill(jT.eta());
           } //  end if ITS
@@ -617,11 +661,11 @@ struct qaMatchEff {
       // pions and kaons together
       if (tpPDGCode == 211 || tpPDGCode == 321) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_piK"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_piK"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_piK"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_piK"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_piK"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_piK"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_piK"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_piK"))->Fill(jT.eta());
           } //  end if ITS
@@ -644,6 +688,28 @@ struct qaMatchEff {
     //
     //
     for (auto& jT : jTracks) {
+
+      // choose if we keep the track according to the TRD presence requirement
+      if ((isTRDThere == 1) && !jT.hasTRD())
+        continue;
+      if ((isTRDThere == 0) && jT.hasTRD())
+        continue;
+
+      if (!jT.has_mcParticle()) {
+        countNoMC++;
+        if (doDebug)
+          LOGF(warning, " N.%d track without MC particle, skipping...", countNoMC);
+        continue;
+      }
+      //
+      // pt from full tracking or from TPCinnerWallPt
+      float trackPt = jT.pt();
+      if (b_useTPCinnerWallPt) {
+        /// Using pt calculated at the inner wall of TPC
+        /// Caveat: tgl still from tracking: this is not the value of tgl at the inner wall of TPC
+        trackPt = computePtInParamTPC(jT);
+      }
+
       // kinematic track seletions for all tracks
       if (!isTrackSelectedKineCuts(jT))
         continue;
@@ -672,24 +738,24 @@ struct qaMatchEff {
       //
       // all tracks, no conditions
       if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-        histos.get<TH1>(HIST("MC/pthist_tpc"))->Fill(jT.pt());
+        histos.get<TH1>(HIST("MC/pthist_tpc"))->Fill(trackPt);
         histos.get<TH1>(HIST("MC/phihist_tpc"))->Fill(jT.phi());
         histos.get<TH1>(HIST("MC/etahist_tpc"))->Fill(jT.eta());
         if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpcits"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpcits"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpcits"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpcits"))->Fill(jT.eta());
         } //  end if ITS
       }   //  end if TPC
       //
       // all tracks with pt>0.5
-      if (jT.pt() > 0.5) {
+      if (trackPt > 0.5) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_05"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_05"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_05"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_05"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_05"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_05"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_05"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_05"))->Fill(jT.eta());
           } //  end if ITS
@@ -699,11 +765,11 @@ struct qaMatchEff {
       // positive only
       if (jT.signed1Pt() > 0) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_pos"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_pos"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_pos"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_pos"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_pos"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_pos"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_pos"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_pos"))->Fill(jT.eta());
           } //  end if ITS
@@ -714,11 +780,11 @@ struct qaMatchEff {
       // negative only
       if (jT.signed1Pt() < 0) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_neg"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_neg"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_neg"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_neg"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_neg"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_neg"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_neg"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_neg"))->Fill(jT.eta());
           } //  end if ITS
@@ -729,11 +795,11 @@ struct qaMatchEff {
       // only primaries
       if (mcpart.isPhysicalPrimary()) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_prim"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_prim"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_prim"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_prim"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_prim"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_prim"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_prim"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_prim"))->Fill(jT.eta());
           } //  end if ITS
@@ -743,11 +809,11 @@ struct qaMatchEff {
       // only secondaries from decay
       else if (mcpart.getProcess() == 4) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_secd"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_secd"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_secd"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_secd"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_secd"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_secd"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_secd"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_secd"))->Fill(jT.eta());
           } //  end if ITS
@@ -756,11 +822,11 @@ struct qaMatchEff {
         // only secondaries from material
         else {
           if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpc_secm"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpc_secm"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpc_secm"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpc_secm"))->Fill(jT.eta());
             if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-              histos.get<TH1>(HIST("MC/pthist_tpcits_secm"))->Fill(jT.pt());
+              histos.get<TH1>(HIST("MC/pthist_tpcits_secm"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/phihist_tpcits_secm"))->Fill(jT.phi());
               histos.get<TH1>(HIST("MC/etahist_tpcits_secm"))->Fill(jT.eta());
             } //  end if ITS
@@ -772,11 +838,11 @@ struct qaMatchEff {
       // protons only
       if (tpPDGCode == 2212) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_P"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_P"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_P"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_P"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_P"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_P"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_P"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_P"))->Fill(jT.eta());
           } //  end if ITS
@@ -788,11 +854,11 @@ struct qaMatchEff {
         //
         // all tracks
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_pi"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_pi"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_pi"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_pi"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_pi"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_pi"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_pi"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_pi"))->Fill(jT.eta());
           } //  end if ITS
@@ -801,11 +867,11 @@ struct qaMatchEff {
         // only primary pions
         if (mcpart.isPhysicalPrimary()) {
           if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpc_pi_prim"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpc_pi_prim"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpc_pi_prim"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpc_pi_prim"))->Fill(jT.eta());
             if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-              histos.get<TH1>(HIST("MC/pthist_tpcits_pi_prim"))->Fill(jT.pt());
+              histos.get<TH1>(HIST("MC/pthist_tpcits_pi_prim"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/phihist_tpcits_pi_prim"))->Fill(jT.phi());
               histos.get<TH1>(HIST("MC/etahist_tpcits_pi_prim"))->Fill(jT.eta());
             } //  end if ITS
@@ -815,11 +881,11 @@ struct qaMatchEff {
         // only secondary pions from decay
         else if (mcpart.getProcess() == 4) {
           if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpc_pi_secd"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpc_pi_secd"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpc_pi_secd"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpc_pi_secd"))->Fill(jT.eta());
             if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-              histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secd"))->Fill(jT.pt());
+              histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secd"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/phihist_tpcits_pi_secd"))->Fill(jT.phi());
               histos.get<TH1>(HIST("MC/etahist_tpcits_pi_secd"))->Fill(jT.eta());
             } //  end if ITS
@@ -828,11 +894,11 @@ struct qaMatchEff {
           // only secondary pions from material
           else {
             if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-              histos.get<TH1>(HIST("MC/pthist_tpc_pi_secm"))->Fill(jT.pt());
+              histos.get<TH1>(HIST("MC/pthist_tpc_pi_secm"))->Fill(trackPt);
               histos.get<TH1>(HIST("MC/phihist_tpc_pi_secm"))->Fill(jT.phi());
               histos.get<TH1>(HIST("MC/etahist_tpc_pi_secm"))->Fill(jT.eta());
               if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-                histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secm"))->Fill(jT.pt());
+                histos.get<TH1>(HIST("MC/pthist_tpcits_pi_secm"))->Fill(trackPt);
                 histos.get<TH1>(HIST("MC/phihist_tpcits_pi_secm"))->Fill(jT.phi());
                 histos.get<TH1>(HIST("MC/etahist_tpcits_pi_secm"))->Fill(jT.eta());
               } //  end if ITS
@@ -854,12 +920,12 @@ struct qaMatchEff {
           pdg_fill = -10.0;
         //
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_nopi"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_nopi"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_nopi"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_nopi"))->Fill(jT.eta());
           histos.get<TH1>(HIST("MC/pdghist_den"))->Fill(pdg_fill);
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_nopi"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_nopi"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_nopi"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_nopi"))->Fill(jT.eta());
             histos.get<TH1>(HIST("MC/pdghist_num"))->Fill(pdg_fill);
@@ -870,11 +936,11 @@ struct qaMatchEff {
       // kaons only
       if (tpPDGCode == 321) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_K"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_K"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_K"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_K"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_K"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_K"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_K"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_K"))->Fill(jT.eta());
           } //  end if ITS
@@ -884,11 +950,11 @@ struct qaMatchEff {
       // pions and kaons together
       if (tpPDGCode == 211 || tpPDGCode == 321) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("MC/pthist_tpc_piK"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("MC/pthist_tpc_piK"))->Fill(trackPt);
           histos.get<TH1>(HIST("MC/phihist_tpc_piK"))->Fill(jT.phi());
           histos.get<TH1>(HIST("MC/etahist_tpc_piK"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("MC/pthist_tpcits_piK"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("MC/pthist_tpcits_piK"))->Fill(trackPt);
             histos.get<TH1>(HIST("MC/phihist_tpcits_piK"))->Fill(jT.phi());
             histos.get<TH1>(HIST("MC/etahist_tpcits_piK"))->Fill(jT.eta());
           } //  end if ITS
@@ -911,6 +977,20 @@ struct qaMatchEff {
     //
     //
     for (auto& jT : jTracks) {
+
+      // choose if we keep the track according to the TRD presence requirement
+      if ((isTRDThere == 1) && !jT.hasTRD())
+        continue;
+      if ((isTRDThere == 0) && jT.hasTRD())
+        continue;
+
+      float trackPt = jT.pt();
+      if (b_useTPCinnerWallPt) {
+        /// Using pt calculated at the inner wall of TPC
+        /// Caveat: tgl still from tracking: this is not the value of tgl at the inner wall of TPC
+        trackPt = computePtInParamTPC(jT);
+      }
+
       // kinematic track seletions for all tracks
       if (!isTrackSelectedKineCuts(jT))
         continue;
@@ -919,20 +999,20 @@ struct qaMatchEff {
       //
       // all tracks, no conditions
       if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-        histos.get<TH1>(HIST("data/pthist_tpc"))->Fill(jT.pt());
+        histos.get<TH1>(HIST("data/pthist_tpc"))->Fill(trackPt);
         histos.get<TH1>(HIST("data/phihist_tpc"))->Fill(jT.phi());
         histos.get<TH1>(HIST("data/etahist_tpc"))->Fill(jT.eta());
-        if (jT.pt() > 0.5) {
-          histos.get<TH1>(HIST("data/pthist_tpc_05"))->Fill(jT.pt());
+        if (trackPt > 0.5) {
+          histos.get<TH1>(HIST("data/pthist_tpc_05"))->Fill(trackPt);
           histos.get<TH1>(HIST("data/phihist_tpc_05"))->Fill(jT.phi());
           histos.get<TH1>(HIST("data/etahist_tpc_05"))->Fill(jT.eta());
         }
         if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-          histos.get<TH1>(HIST("data/pthist_tpcits"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("data/pthist_tpcits"))->Fill(trackPt);
           histos.get<TH1>(HIST("data/phihist_tpcits"))->Fill(jT.phi());
           histos.get<TH1>(HIST("data/etahist_tpcits"))->Fill(jT.eta());
-          if (jT.pt() > 0.5) {
-            histos.get<TH1>(HIST("data/pthist_tpcits_05"))->Fill(jT.pt());
+          if (trackPt > 0.5) {
+            histos.get<TH1>(HIST("data/pthist_tpcits_05"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/phihist_tpcits_05"))->Fill(jT.phi());
             histos.get<TH1>(HIST("data/etahist_tpcits_05"))->Fill(jT.eta());
           }
@@ -943,11 +1023,11 @@ struct qaMatchEff {
       // positive only
       if (jT.signed1Pt() > 0) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("data/pthist_tpc_pos"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("data/pthist_tpc_pos"))->Fill(trackPt);
           histos.get<TH1>(HIST("data/phihist_tpc_pos"))->Fill(jT.phi());
           histos.get<TH1>(HIST("data/etahist_tpc_pos"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("data/pthist_tpcits_pos"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("data/pthist_tpcits_pos"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/phihist_tpcits_pos"))->Fill(jT.phi());
             histos.get<TH1>(HIST("data/etahist_tpcits_pos"))->Fill(jT.eta());
           } //  end if ITS
@@ -958,11 +1038,11 @@ struct qaMatchEff {
       // negative only
       if (jT.signed1Pt() < 0) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("data/pthist_tpc_neg"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("data/pthist_tpc_neg"))->Fill(trackPt);
           histos.get<TH1>(HIST("data/phihist_tpc_neg"))->Fill(jT.phi());
           histos.get<TH1>(HIST("data/etahist_tpc_neg"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("data/pthist_tpcits_neg"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("data/pthist_tpcits_neg"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/phihist_tpcits_neg"))->Fill(jT.phi());
             histos.get<TH1>(HIST("data/etahist_tpcits_neg"))->Fill(jT.eta());
           } //  end if ITS
@@ -987,6 +1067,20 @@ struct qaMatchEff {
     //
     //
     for (auto& jT : jTracks) {
+
+      // choose if we keep the track according to the TRD presence requirement
+      if ((isTRDThere == 1) && !jT.hasTRD())
+        continue;
+      if ((isTRDThere == 0) && jT.hasTRD())
+        continue;
+
+      float trackPt = jT.pt();
+      if (b_useTPCinnerWallPt) {
+        /// Using pt calculated at the inner wall of TPC
+        /// Caveat: tgl still from tracking: this is not the value of tgl at the inner wall of TPC
+        trackPt = computePtInParamTPC(jT);
+      }
+
       // kinematic track seletions for all tracks
       if (!isTrackSelectedKineCuts(jT))
         continue;
@@ -995,20 +1089,20 @@ struct qaMatchEff {
       //
       // all tracks, no conditions
       if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-        histos.get<TH1>(HIST("data/pthist_tpc"))->Fill(jT.pt());
+        histos.get<TH1>(HIST("data/pthist_tpc"))->Fill(trackPt);
         histos.get<TH1>(HIST("data/phihist_tpc"))->Fill(jT.phi());
         histos.get<TH1>(HIST("data/etahist_tpc"))->Fill(jT.eta());
-        if (jT.pt() > 0.5) {
-          histos.get<TH1>(HIST("data/pthist_tpc_05"))->Fill(jT.pt());
+        if (trackPt > 0.5) {
+          histos.get<TH1>(HIST("data/pthist_tpc_05"))->Fill(trackPt);
           histos.get<TH1>(HIST("data/phihist_tpc_05"))->Fill(jT.phi());
           histos.get<TH1>(HIST("data/etahist_tpc_05"))->Fill(jT.eta());
         }
         if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-          histos.get<TH1>(HIST("data/pthist_tpcits"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("data/pthist_tpcits"))->Fill(trackPt);
           histos.get<TH1>(HIST("data/phihist_tpcits"))->Fill(jT.phi());
           histos.get<TH1>(HIST("data/etahist_tpcits"))->Fill(jT.eta());
-          if (jT.pt() > 0.5) {
-            histos.get<TH1>(HIST("data/pthist_tpcits_05"))->Fill(jT.pt());
+          if (trackPt > 0.5) {
+            histos.get<TH1>(HIST("data/pthist_tpcits_05"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/phihist_tpcits_05"))->Fill(jT.phi());
             histos.get<TH1>(HIST("data/etahist_tpcits_05"))->Fill(jT.eta());
           }
@@ -1019,11 +1113,11 @@ struct qaMatchEff {
       // positive only
       if (jT.signed1Pt() > 0) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("data/pthist_tpc_pos"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("data/pthist_tpc_pos"))->Fill(trackPt);
           histos.get<TH1>(HIST("data/phihist_tpc_pos"))->Fill(jT.phi());
           histos.get<TH1>(HIST("data/etahist_tpc_pos"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("data/pthist_tpcits_pos"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("data/pthist_tpcits_pos"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/phihist_tpcits_pos"))->Fill(jT.phi());
             histos.get<TH1>(HIST("data/etahist_tpcits_pos"))->Fill(jT.eta());
           } //  end if ITS
@@ -1034,11 +1128,11 @@ struct qaMatchEff {
       // negative only
       if (jT.signed1Pt() < 0) {
         if (jT.hasTPC() && isTrackSelectedTPCCuts(jT)) {
-          histos.get<TH1>(HIST("data/pthist_tpc_neg"))->Fill(jT.pt());
+          histos.get<TH1>(HIST("data/pthist_tpc_neg"))->Fill(trackPt);
           histos.get<TH1>(HIST("data/phihist_tpc_neg"))->Fill(jT.phi());
           histos.get<TH1>(HIST("data/etahist_tpc_neg"))->Fill(jT.eta());
           if (jT.hasITS() && isTrackSelectedITSCuts(jT)) {
-            histos.get<TH1>(HIST("data/pthist_tpcits_neg"))->Fill(jT.pt());
+            histos.get<TH1>(HIST("data/pthist_tpcits_neg"))->Fill(trackPt);
             histos.get<TH1>(HIST("data/phihist_tpcits_neg"))->Fill(jT.phi());
             histos.get<TH1>(HIST("data/etahist_tpcits_neg"))->Fill(jT.eta());
           } //  end if ITS

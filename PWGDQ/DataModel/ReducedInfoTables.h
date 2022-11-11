@@ -115,6 +115,7 @@ DECLARE_SOA_COLUMN(Pt, pt, float);       //!
 DECLARE_SOA_COLUMN(Eta, eta, float);     //!
 DECLARE_SOA_COLUMN(Phi, phi, float);     //!
 DECLARE_SOA_COLUMN(Sign, sign, int);     //!
+DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, int); //!
 DECLARE_SOA_COLUMN(DcaXY, dcaXY, float); //!
 DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);   //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,       //!
@@ -130,7 +131,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, //!
 // basic track information
 DECLARE_SOA_TABLE(ReducedTracks, "AOD", "REDUCEDTRACK", //!
                   o2::soa::Index<>, reducedtrack::ReducedEventId, reducedtrack::FilteringFlags,
-                  reducedtrack::Pt, reducedtrack::Eta, reducedtrack::Phi, reducedtrack::Sign,
+                  reducedtrack::Pt, reducedtrack::Eta, reducedtrack::Phi, reducedtrack::Sign, reducedtrack::IsAmbiguous,
                   reducedtrack::Px<reducedtrack::Pt, reducedtrack::Phi>,
                   reducedtrack::Py<reducedtrack::Pt, reducedtrack::Phi>,
                   reducedtrack::Pz<reducedtrack::Pt, reducedtrack::Eta>,
@@ -175,8 +176,8 @@ DECLARE_SOA_INDEX_COLUMN(ReducedMCEvent, reducedMCevent);                       
 DECLARE_SOA_COLUMN(McReducedFlags, mcReducedFlags, uint16_t);                               //! Flags to hold compressed MC selection information
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother0, mother0, int, "ReducedMCTracks_Mother0");       //! Track index of the first mother
 DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Mother1, mother1, int, "ReducedMCTracks_Mother1");       //! Track index of the last mother
-DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter0, daughter0, int, "ReducedMCTracks_Daughter0"); //! Track index of the first daugther
-DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter1, daughter1, int, "ReducedMCTracks_Daughter1"); //! Track index of the last daugther
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter0, daughter0, int, "ReducedMCTracks_Daughter0"); //! Track index of the first daughter
+DECLARE_SOA_SELF_INDEX_COLUMN_FULL(Daughter1, daughter1, int, "ReducedMCTracks_Daughter1"); //! Track index of the last daughter
 DECLARE_SOA_SELF_ARRAY_INDEX_COLUMN(Mothers, mothers);                                      //! Mother tracks (possible empty) array. Iterate over mcParticle.mothers_as<aod::McParticles>())
 DECLARE_SOA_SELF_SLICE_INDEX_COLUMN(Daughters, daughters);                                  //! Daughter tracks (possibly empty) slice. Check for non-zero with mcParticle.has_daughters(). Iterate over mcParticle.daughters_as<aod::McParticles>())
 DECLARE_SOA_COLUMN(Pt, pt, float);                                                          //!
@@ -247,6 +248,9 @@ DECLARE_SOA_COLUMN(Pt, pt, float);   //!
 DECLARE_SOA_COLUMN(Eta, eta, float); //!
 DECLARE_SOA_COLUMN(Phi, phi, float); //!
 DECLARE_SOA_COLUMN(Sign, sign, int); //!
+DECLARE_SOA_COLUMN(FwdDcaX, fwdDcaX, float);       //!  Impact parameter in X of forward track to the primary vertex
+DECLARE_SOA_COLUMN(FwdDcaY, fwdDcaY, float);       //!  Impact parameter in Y of forward track to the primary vertex
+DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, int); //!
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,   //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
@@ -270,7 +274,7 @@ DECLARE_SOA_SELF_INDEX_COLUMN_FULL(MCHTrack, matchMCHTrack, int, "Muons_MatchMCH
 // Muon track kinematics
 DECLARE_SOA_TABLE(ReducedMuons, "AOD", "RTMUON", //!
                   o2::soa::Index<>, reducedmuon::ReducedEventId, reducedmuon::FilteringFlags,
-                  reducedmuon::Pt, reducedmuon::Eta, reducedmuon::Phi, reducedmuon::Sign,
+                  reducedmuon::Pt, reducedmuon::Eta, reducedmuon::Phi, reducedmuon::Sign, reducedmuon::IsAmbiguous,
                   reducedmuon::Px<reducedmuon::Pt, reducedmuon::Phi>,
                   reducedmuon::Py<reducedmuon::Pt, reducedmuon::Phi>,
                   reducedmuon::Pz<reducedmuon::Pt, reducedmuon::Eta>,
@@ -281,7 +285,8 @@ DECLARE_SOA_TABLE(ReducedMuonsExtra, "AOD", "RTMUONEXTRA", //!
                   fwdtrack::NClusters, fwdtrack::PDca, fwdtrack::RAtAbsorberEnd,
                   fwdtrack::Chi2, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT,
                   fwdtrack::MatchScoreMCHMFT, reducedmuon::MCHTrackId,
-                  fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards, fwdtrack::TrackType);
+                  fwdtrack::MCHBitMap, fwdtrack::MIDBitMap, fwdtrack::MIDBoards, fwdtrack::TrackType,
+                  reducedmuon::FwdDcaX, reducedmuon::FwdDcaY);
 
 // Muon covariance, TODO: the rest of the matrix should be added when needed
 DECLARE_SOA_TABLE(ReducedMuonsCov, "AOD", "RTMUONCOV",

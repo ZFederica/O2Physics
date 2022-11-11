@@ -683,14 +683,11 @@ struct AnalysisSameEventPairing {
       }
     }
 
-    ccdb->setURL(url.value);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setCreatedNotAfter(nolaterthan.value);
-    auto histCCDB = ccdb->get<TH1F>(ccdbPath.value);
-    if (!histCCDB) {
-      LOGF(fatal, "CCDB histogram not found");
-    }
+    // Usage example of ccdb
+    //ccdb->setURL(url.value);
+    //ccdb->setCaching(true);
+    //ccdb->setLocalObjectValidityChecking();
+    //ccdb->setCreatedNotAfter(nolaterthan.value);
 
     DefineHistograms(fHistMan, histNames.Data());    // define all histograms
     VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
@@ -868,7 +865,7 @@ struct AnalysisDileptonHadron {
 
   // NOTE: the barrel track filter is shared between the filters for dilepton electron candidates (first n-bits)
   //       and the associated hadrons (n+1 bit) --> see the barrel track selection task
-  //      The current condition should be replaced when bitwise operators will become available in Filter expresions
+  //      The current condition should be replaced when bitwise operators will become available in Filter expressions
   int fNHadronCutBit;
 
   void init(o2::framework::InitContext& context)
@@ -969,6 +966,15 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
     if (classStr.Contains("Track")) {
       if (classStr.Contains("Barrel")) {
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "its,tpcpid,dca,tofpid");
+        if (classStr.Contains("PIDCalibElectron")) {
+          dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "postcalib_electron");
+        }
+        if (classStr.Contains("PIDCalibPion")) {
+          dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "postcalib_pion");
+        }
+        if (classStr.Contains("PIDCalibProton")) {
+          dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "postcalib_proton");
+        }
       }
       if (classStr.Contains("Muon")) {
         dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "track", "muon");
