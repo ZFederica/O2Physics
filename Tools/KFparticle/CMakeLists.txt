@@ -11,5 +11,5 @@
 
 o2physics_add_dpl_workflow(qa-kfparticle
                            SOURCES qaKFParticle.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats KFParticle::KFParticle
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2::DetectorsVertexing O2::ReconstructionDataFormats KFParticle::KFParticle
                            COMPONENT_NAME Analysis)
