@@ -283,29 +283,28 @@ struct qaKFParticle {
   }
 
   /// Process function for data
-  void processData(CollisionTableData const& collisions, soa::Filtered<TrackTableData> const& tracks, aod::BCsWithTimestamps const& bcWithTimeStamps)
+  void processData(CollisionTableData const& collisions, soa::Filtered<TrackTableData> const& tracks, aod::BCsWithTimestamps const&)
   {
+    auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
+    if (runNumber != bc.runNumber()) {
+      initMagneticFieldCCDB(bc, runNumber, ccdb, isRun3 ? ccdbPathGrpMag : ccdbPathGrp, lut, isRun3);
+      magneticField = o2::base::Propagator::Instance()->getNominalBz();
+      /// Set magnetic field for KF vertexing
+      KFParticle::SetField(magneticField);
+    }
     for (auto const& collision : collisions) {
       /// Apply event selection
       if (!isSelectedCollision(collision)) {
         continue;
       }
       auto tracks = tracksFiltered->sliceByCached(aod::track::collisionId, collision.globalIndex());
-
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      if (runNumber != bc.runNumber()) {
-        initMagneticFieldCCDB(bc, runNumber, ccdb, isRun3 ? ccdbPathGrpMag : ccdbPathGrp, lut, isRun3);
-        magneticField = o2::base::Propagator::Instance()->getNominalBz();
-      }
-      /// Set magnetic field for KF vertexing
-      KFParticle::SetField(magneticField);
-
       /// set KF primary vertex
       KFPVertex kfpVertex;
       kfpVertex.SetXYZ(collision.posX(), collision.posY(), collision.posZ());
-      kfpVertex.SetCovarianceMatrix(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+      /// CAREFUL!!!!!! Covariance matrix elements yy and xz are switched until a central fix is provided!!!!!
+      kfpVertex.SetCovarianceMatrix(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ());
       kfpVertex.SetChi2(collision.chi2());
-      //kfpVertex.SetNDF(...); ?? What number should I put here?
+      kfpVertex.SetNDF(2); //?? What number should I put here?
       kfpVertex.SetNContributors(collision.numContrib());
 
       KFParticle KFPV(kfpVertex);
@@ -427,7 +426,8 @@ struct qaKFParticle {
           kfpTrackKa.SetCharge(1);
         }
         /// Add these quantities!
-        //kfpTrack.SetNDF(...);
+        kfpTrackPi.SetNDF(1); // Which is the correct number?
+        kfpTrackKa.SetNDF(1); // Which is the correct number?
         //kfpTrack.SetChi2(...);
 
         KFParticle KFPion(kfpTrackPi, 211);
