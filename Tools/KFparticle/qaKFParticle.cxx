@@ -35,6 +35,8 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "TableHelper.h"
+#include <iostream>
+using namespace std;
 
 /// includes KFParticle
 #ifndef HomogeneousField
@@ -259,12 +261,12 @@ struct qaKFParticle {
     return true;
   }
 
-  float CosPointingAngleFromKF(KFParticle kfp, KFParticle kfpmother)
+  float CosPointingAngleFromKF(KFParticle kfp, KFParticle PV)
   {
     float v[3];
-    v[0] = kfp.GetX() - kfpmother.GetX();
-    v[1] = kfp.GetY() - kfpmother.GetY();
-    v[2] = kfp.GetZ() - kfpmother.GetZ();
+    v[0] = kfp.GetX() - PV.GetX();
+    v[1] = kfp.GetY() - PV.GetY();
+    v[2] = kfp.GetZ() - PV.GetZ();
 
     float p[3];
     p[0] = kfp.GetPx();
@@ -282,268 +284,288 @@ struct qaKFParticle {
     }
   }
 
-  /// Process function for data
-  void processData(CollisionTableData const& collisions, soa::Filtered<TrackTableData> const& tracks, aod::BCsWithTimestamps const&)
+  float CosPointingAngleXYFromKF(KFParticle kfp, KFParticle PV)
   {
-    auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
+    float v[3];
+    v[0] = kfp.GetX() - PV.GetX();
+    v[1] = kfp.GetY() - PV.GetY();
+
+    float p[3];
+    p[0] = kfp.GetPx();
+    p[1] = kfp.GetPy();
+
+    float ptimesv2 = (p[0]*p[0]+p[1]*p[1])*(v[0]*v[0]+v[1]*v[1]);
+
+    if ( ptimesv2<=0 ) return 0.;
+    else {
+      double cos = (v[0]*p[0]+v[1]*p[1]) / sqrt(ptimesv2);
+      if(cos >  1.0) cos =  1.0;
+      if(cos < -1.0) cos = -1.0;
+      return cos;
+    }
+  }
+
+  /// Process function for data
+  void processData(CollisionTableData::iterator const& collision, soa::Filtered<TrackTableData> const& tracks, aod::BCsWithTimestamps const&)
+  {
+
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     if (runNumber != bc.runNumber()) {
       initMagneticFieldCCDB(bc, runNumber, ccdb, isRun3 ? ccdbPathGrpMag : ccdbPathGrp, lut, isRun3);
       magneticField = o2::base::Propagator::Instance()->getNominalBz();
       /// Set magnetic field for KF vertexing
       KFParticle::SetField(magneticField);
     }
-    for (auto const& collision : collisions) {
-      /// Apply event selection
-      if (!isSelectedCollision(collision)) {
-        continue;
-      }
-      auto tracks = tracksFiltered->sliceByCached(aod::track::collisionId, collision.globalIndex());
-      /// set KF primary vertex
-      KFPVertex kfpVertex;
-      kfpVertex.SetXYZ(collision.posX(), collision.posY(), collision.posZ());
-      /// CAREFUL!!!!!! Covariance matrix elements yy and xz are switched until a central fix is provided!!!!!
-      kfpVertex.SetCovarianceMatrix(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ());
-      kfpVertex.SetChi2(collision.chi2());
-      kfpVertex.SetNDF(2); //?? What number should I put here?
-      kfpVertex.SetNContributors(collision.numContrib());
+    /// Apply event selection
+    if (!isSelectedCollision(collision)) {
+      return;
+    }
+    /// set KF primary vertex
+    KFPVertex kfpVertex;
+    kfpVertex.SetXYZ(collision.posX(), collision.posY(), collision.posZ());
+    /// CAREFUL!!!!!! Covariance matrix elements yy and xz are switched until a central fix is provided!!!!!
+    kfpVertex.SetCovarianceMatrix(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ());
+    kfpVertex.SetChi2(collision.chi2());
+    kfpVertex.SetNDF(2); //?? What number should I put here?
+    kfpVertex.SetNContributors(collision.numContrib());
 
-      KFParticle KFPV(kfpVertex);
+    KFParticle KFPV(kfpVertex);
 
-      /// fill collision parameters
-      histos.fill(HIST("Events/covXX"), collision.covXX());
-      histos.fill(HIST("Events/covXY"), collision.covXY());
-      histos.fill(HIST("Events/covXZ"), collision.covXZ());
-      histos.fill(HIST("Events/covYY"), collision.covYY());
-      histos.fill(HIST("Events/covYZ"), collision.covYZ());
-      histos.fill(HIST("Events/covZZ"), collision.covZZ());
+    /// fill collision parameters
+    histos.fill(HIST("Events/covXX"), collision.covXX());
+    histos.fill(HIST("Events/covXY"), collision.covXY());
+    histos.fill(HIST("Events/covXZ"), collision.covXZ());
+    histos.fill(HIST("Events/covYY"), collision.covYY());
+    histos.fill(HIST("Events/covYZ"), collision.covYZ());
+    histos.fill(HIST("Events/covZZ"), collision.covZZ());
 
-      histos.fill(HIST("EventsKF/posX"), kfpVertex.GetX());
-      histos.fill(HIST("EventsKF/posY"), kfpVertex.GetY());
-      histos.fill(HIST("EventsKF/posZ"), kfpVertex.GetZ());
-      histos.fill(HIST("EventsKF/posXY"), kfpVertex.GetX(), kfpVertex.GetY());
-      histos.fill(HIST("EventsKF/nContrib"), kfpVertex.GetNContributors());
-      histos.fill(HIST("EventsKF/vertexChi2"), kfpVertex.GetChi2());
-      histos.fill(HIST("EventsKF/covXX"), kfpVertex.GetCovariance(0));
-      histos.fill(HIST("EventsKF/covXY"), kfpVertex.GetCovariance(1));
-      histos.fill(HIST("EventsKF/covYY"), kfpVertex.GetCovariance(2));
-      histos.fill(HIST("EventsKF/covXZ"), kfpVertex.GetCovariance(3));
-      histos.fill(HIST("EventsKF/covYZ"), kfpVertex.GetCovariance(4));
-      histos.fill(HIST("EventsKF/covZZ"), kfpVertex.GetCovariance(5));
+    histos.fill(HIST("EventsKF/posX"), kfpVertex.GetX());
+    histos.fill(HIST("EventsKF/posY"), kfpVertex.GetY());
+    histos.fill(HIST("EventsKF/posZ"), kfpVertex.GetZ());
+    histos.fill(HIST("EventsKF/posXY"), kfpVertex.GetX(), kfpVertex.GetY());
+    histos.fill(HIST("EventsKF/nContrib"), kfpVertex.GetNContributors());
+    histos.fill(HIST("EventsKF/vertexChi2"), kfpVertex.GetChi2());
+    histos.fill(HIST("EventsKF/covXX"), kfpVertex.GetCovariance(0));
+    histos.fill(HIST("EventsKF/covXY"), kfpVertex.GetCovariance(1));
+    histos.fill(HIST("EventsKF/covYY"), kfpVertex.GetCovariance(2));
+    histos.fill(HIST("EventsKF/covXZ"), kfpVertex.GetCovariance(3));
+    histos.fill(HIST("EventsKF/covYZ"), kfpVertex.GetCovariance(4));
+    histos.fill(HIST("EventsKF/covZZ"), kfpVertex.GetCovariance(5));
 
-      for (auto& [track1, track2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
+    for (auto& [track1, track2] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(tracks, tracks))) {
 
-        auto track1p = track1.p();
-        auto track2p = track2.p();
+      auto track1p = track1.p();
+      auto track2p = track2.p();
 
-        o2::track::TrackParametrizationWithError trackparCovPi;
-        o2::track::TrackParametrizationWithError trackparCovKa; 
+      o2::track::TrackParametrizationWithError trackparCovPi;
+      o2::track::TrackParametrizationWithError trackparCovKa; 
 
-        bool CandD0 = false;
-        bool CandD0bar = false;
-        /// At the moment pT independent TPC selection. Add a minimum and Maximum momentum
-        /// Apply TPC+TOF at higher momenta (TOF still uncalibrated for LHC22f).
-        /// Select D0 and D0bar candidates
-        if (nSigmaTPCMinPi <= track1.tpcNSigmaPi() && track1.tpcNSigmaPi() <= nSigmaTPCMaxPi && nSigmaTPCMinKa <= track2.tpcNSigmaKa() && track2.tpcNSigmaPi() <= nSigmaTPCMaxKa) {
-          if (track1.sign() == 1 && track2.sign() == -1) {
-            CandD0 = true;
-            trackparCovPi = getTrackParCov(track1);
-            trackparCovKa = getTrackParCov(track2);
-          }
-          else if (track1.sign() == -1 && track2.sign() == 1) {
-            CandD0bar = true;
-            trackparCovPi = getTrackParCov(track1);
-            trackparCovKa = getTrackParCov(track2);
-          }
-          else {
-            continue;
-          }
+      bool CandD0 = false;
+      bool CandD0bar = false;
+      /// At the moment pT independent TPC selection. Add a minimum and Maximum momentum
+      /// Apply TPC+TOF at higher momenta (TOF still uncalibrated for LHC22f).
+      /// Select D0 and D0bar candidates
+      if (nSigmaTPCMinPi <= track1.tpcNSigmaPi() && track1.tpcNSigmaPi() <= nSigmaTPCMaxPi && nSigmaTPCMinKa <= track2.tpcNSigmaKa() && track2.tpcNSigmaPi() <= nSigmaTPCMaxKa) {
+        if (track1.sign() == 1 && track2.sign() == -1) {
+          CandD0 = true;
+          trackparCovPi = getTrackParCov(track1);
+          trackparCovKa = getTrackParCov(track2);
         }
-        else if(nSigmaTPCMinKa <= track1.tpcNSigmaKa() && track1.tpcNSigmaKa() <= nSigmaTPCMaxKa && nSigmaTPCMinPi <= track2.tpcNSigmaPi() && track2.tpcNSigmaPi() <= nSigmaTPCMaxPi) {
-          if (track1.sign() == 1 && track2.sign() == -1) {
-            CandD0bar = true;
-            trackparCovPi = getTrackParCov(track2);
-            trackparCovKa = getTrackParCov(track1);
-          }
-          else if (track1.sign() == -1 && track2.sign() == 1) {
-            CandD0 = true;
-            trackparCovPi = getTrackParCov(track2);
-            trackparCovKa = getTrackParCov(track1);
-          }
-          else {
-            continue;
-          }
+        else if (track1.sign() == -1 && track2.sign() == 1) {
+          CandD0bar = true;
+          trackparCovPi = getTrackParCov(track1);
+          trackparCovKa = getTrackParCov(track2);
         }
         else {
           continue;
         }
-
-        /// Apply single track cuts as a prefilter on the daughter tracks.
-        if (track1p < pTMin || abs(track1.eta())>etaRange || track2p < pTMin || abs(track2.eta())>etaRange) {
+      }
+      else if(nSigmaTPCMinKa <= track1.tpcNSigmaKa() && track1.tpcNSigmaKa() <= nSigmaTPCMaxKa && nSigmaTPCMinPi <= track2.tpcNSigmaPi() && track2.tpcNSigmaPi() <= nSigmaTPCMaxPi) {
+        if (track1.sign() == 1 && track2.sign() == -1) {
+          CandD0bar = true;
+          trackparCovPi = getTrackParCov(track2);
+          trackparCovKa = getTrackParCov(track1);
+        }
+        else if (track1.sign() == -1 && track2.sign() == 1) {
+          CandD0 = true;
+          trackparCovPi = getTrackParCov(track2);
+          trackparCovKa = getTrackParCov(track1);
+        }
+        else {
           continue;
         }
+      }
+      else {
+        continue;
+      }
+
+      /// Apply single track cuts as a prefilter on the daughter tracks.
+      if (track1p < pTMin || abs(track1.eta())>etaRange || track2p < pTMin || abs(track2.eta())>etaRange) {
+        continue;
+      }
+    
+
+      /// Keep in mind that in the track table the parameters are stored after propagation to the DCA to the PV.
+      /// Check if we need to get another table. Or where the parameters might have to be propagated.
+      array<float, 3> trkpos_parPi;
+      array<float, 3> trkpos_parKa;
+      array<float, 3> trkmom_parPi;
+      array<float, 3> trkmom_parKa;
+      array<float, 21> trk_covPi;
+      array<float, 21> trk_covKa;
+
+
+      trackparCovPi.getXYZGlo(trkpos_parPi);
+      trackparCovPi.getPxPyPzGlo(trkmom_parPi);
+      trackparCovPi.getCovXYZPxPyPzGlo(trk_covPi);
+      trackparCovKa.getXYZGlo(trkpos_parKa);
+      trackparCovKa.getPxPyPzGlo(trkmom_parKa);
+      trackparCovKa.getCovXYZPxPyPzGlo(trk_covKa);
+      float trkpar_KFPi[6] = {trkpos_parPi[0], trkpos_parPi[1], trkpos_parPi[2],
+                                 trkmom_parPi[0], trkmom_parPi[1], trkmom_parPi[2]};
+      float trkpar_KFKa[6] = {trkpos_parKa[0], trkpos_parKa[1], trkpos_parKa[2],
+                                 trkmom_parKa[0], trkmom_parKa[1], trkmom_parKa[2]};
+      float trkcov_KFPi[21];
+      float trkcov_KFKa[21];
+      for (int i = 0; i < 21; i++) {
+        trkcov_KFPi[i] = trk_covPi[i];
+        trkcov_KFKa[i] = trk_covKa[i];
+      }
+
+      KFPTrack kfpTrackPi;
+      KFPTrack kfpTrackKa;
+      kfpTrackPi.SetParameters(trkpar_KFPi);
+      kfpTrackPi.SetCovarianceMatrix(trkcov_KFPi);
+      kfpTrackKa.SetParameters(trkpar_KFKa);
+      kfpTrackKa.SetCovarianceMatrix(trkcov_KFKa);
+
+      if (CandD0) {
+        kfpTrackPi.SetCharge(1);
+        kfpTrackKa.SetCharge(-1);
+      } 
+      else if (CandD0bar) {
+        kfpTrackPi.SetCharge(-1);
+        kfpTrackKa.SetCharge(1);
+      }
+      /// Add these quantities!
+      kfpTrackPi.SetNDF(1); // Which is the correct number?
+      kfpTrackKa.SetNDF(1); // Which is the correct number?
+      //kfpTrack.SetChi2(...);
+
+      KFParticle KFPion(kfpTrackPi, 211);
+      KFParticle KFKaon(kfpTrackKa, 321);
+
+
+
+      /// fill track parameters
+      histos.fill(HIST("TracksKFPi/x"), kfpTrackPi.GetX());
+      histos.fill(HIST("TracksKFPi/y"), kfpTrackPi.GetY());
+      histos.fill(HIST("TracksKFPi/z"), kfpTrackPi.GetZ());
+      histos.fill(HIST("TracksKFPi/px"), kfpTrackPi.GetPx());
+      histos.fill(HIST("TracksKFPi/py"), kfpTrackPi.GetPy());
+      histos.fill(HIST("TracksKFPi/pz"), kfpTrackPi.GetPz());
+      histos.fill(HIST("TracksKFPi/chi2perNDF"), kfpTrackPi.GetChi2perNDF());
+      histos.fill(HIST("TracksKFPi/dcaXY"), KFPion.GetDistanceFromVertexXY(kfpVertex));
+      histos.fill(HIST("TracksKFPi/length"), KFPion.GetDecayLength());
+
+      histos.fill(HIST("TracksKFKa/x"), kfpTrackKa.GetX());
+      histos.fill(HIST("TracksKFKa/y"), kfpTrackKa.GetY());
+      histos.fill(HIST("TracksKFKa/z"), kfpTrackKa.GetZ());
+      histos.fill(HIST("TracksKFKa/px"), kfpTrackKa.GetPx());
+      histos.fill(HIST("TracksKFKa/py"), kfpTrackKa.GetPy());
+      histos.fill(HIST("TracksKFKa/pz"), kfpTrackKa.GetPz());
+      histos.fill(HIST("TracksKFKa/chi2perNDF"), kfpTrackKa.GetChi2perNDF());
+      histos.fill(HIST("TracksKFKa/dcaXY"), KFKaon.GetDistanceFromVertexXY(kfpVertex));
+      histos.fill(HIST("TracksKFKa/length"), KFKaon.GetDecayLength());
+
+      KFParticle KFDZero;
+      const KFParticle *D0Daughters[2] = {&KFPion, &KFKaon};
+      int NDaughters = 2;
+      KFDZero.SetConstructMethod(2);
+      KFDZero.Construct(D0Daughters, NDaughters, &KFPV);
+
+      float X=0., Y=0.,Z=0., E=0., Chi2=0., NDF=0., P=0., Pt=0., Eta=0., Phi=0., mass=0., decayLength=0., decayLengthxy=0., cosPA=-1., lifeTime=0., massErr=0., decayLengthErr=0.;
+      bool atProductionVertex = false;
+      float distToPV=0., deviationToPV=0., distToPVxy=0., deviationToPVxy=0.;
+
+      KFParticle KFDZero_DecayVtx = KFDZero;
+      KFDZero_DecayVtx.TransportToDecayVertex();
+
+      X=KFDZero.GetX();
+      Y=KFDZero.GetY();
+      Z=KFDZero.GetZ();
+      E=KFDZero.GetE();
+      Chi2=KFDZero.GetChi2();
+      NDF=KFDZero.GetNDF();
+      P=KFDZero.GetP();
+      Pt=KFDZero.GetPt();
+      Eta=KFDZero.GetEta();
+      Phi=KFDZero.GetPhi();
+      mass=KFDZero.GetMass();
+      decayLength=KFDZero.GetDecayLength();
+      decayLengthxy=KFDZero.GetDecayLengthXY();
+      cosPA=CosPointingAngleFromKF(KFDZero_DecayVtx, KFPV);
+      lifeTime=KFDZero.GetLifeTime();
+      massErr=KFDZero.GetErrMass();
+      decayLengthErr=KFDZero.GetErrDecayLength();
+      distToPV=KFDZero.GetDistanceFromVertex(KFPV);
+      deviationToPV=KFDZero.GetDeviationFromVertex(KFPV);
+      distToPVxy=KFDZero.GetDistanceFromVertexXY(KFPV);
+      deviationToPVxy=KFDZero.GetDeviationFromVertexXY(KFPV);
+      atProductionVertex=KFDZero.GetAtProductionVertex();
+
+      /// Remove daughter tracks from PV fit?
+      /// Pt selection
+      if (Pt<pTMinD0 || Pt>pTMaxD0) {
+        continue;
+      }
+      /// Mass window selection
+      if (mass<massMinD0 || mass>massMaxD0) {
+        continue;
+      }
+      /// cosine pointing anle selection
+      if (cosPA < d_cosPA) {
+        continue;
+      }
+      /// decay length selection
+      if (decayLength<d_decayLength) {
+        continue;
+      }
+      
+      histos.fill(HIST("DZeroCand/atProductionVertex"), atProductionVertex);
+      histos.fill(HIST("DZeroCand/X"), X);
+      histos.fill(HIST("DZeroCand/Y"), Y);
+      histos.fill(HIST("DZeroCand/Z"), Z);
+      histos.fill(HIST("DZeroCand/E"), E);
+      histos.fill(HIST("DZeroCand/Chi2"), Chi2);
+      histos.fill(HIST("DZeroCand/NDF"), NDF);
+      histos.fill(HIST("DZeroCand/p"), P);
+      histos.fill(HIST("DZeroCand/pt"), Pt);
+      histos.fill(HIST("DZeroCand/eta"), Eta);
+      histos.fill(HIST("DZeroCand/phi"), Phi);
+      histos.fill(HIST("DZeroCand/mass"), mass);
+      histos.fill(HIST("DZeroCand/massvspt"), Pt, mass);
+      histos.fill(HIST("DZeroCand/decayLength"), decayLength);
+      histos.fill(HIST("DZeroCand/decayLengthXY"), decayLengthxy);
+      histos.fill(HIST("DZeroCand/cosPA"), cosPA);
+      histos.fill(HIST("DZeroCand/lifetime"), lifeTime);
+      histos.fill(HIST("DZeroCand/massErr"), massErr);
+      histos.fill(HIST("DZeroCand/massErr"), massErr);
+      histos.fill(HIST("DZeroCand/decayLengthErr"), decayLengthErr);
+      histos.fill(HIST("DZeroCand/decayLengthErr"), decayLengthErr);
+      histos.fill(HIST("DZeroCand/distToPV"), distToPV);
+      histos.fill(HIST("DZeroCand/deviationToPV"), deviationToPV);
+      histos.fill(HIST("DZeroCand/distToPVXY"), distToPVxy);
+      histos.fill(HIST("DZeroCand/deviationToPVXY"), deviationToPVxy);
+      
       
 
-        /// Keep in mind that in the track table the parameters are stored after propagation to the DCA to the PV.
-        /// Check if we need to get another table. Or where the parameters might have to be propagated.
-        array<float, 3> trkpos_parPi;
-        array<float, 3> trkpos_parKa;
-        array<float, 3> trkmom_parPi;
-        array<float, 3> trkmom_parKa;
-        array<float, 21> trk_covPi;
-        array<float, 21> trk_covKa;
 
-
-        trackparCovPi.getXYZGlo(trkpos_parPi);
-        trackparCovPi.getPxPyPzGlo(trkmom_parPi);
-        trackparCovPi.getCovXYZPxPyPzGlo(trk_covPi);
-        trackparCovKa.getXYZGlo(trkpos_parKa);
-        trackparCovKa.getPxPyPzGlo(trkmom_parKa);
-        trackparCovKa.getCovXYZPxPyPzGlo(trk_covKa);
-        float trkpar_KFPi[6] = {trkpos_parPi[0], trkpos_parPi[1], trkpos_parPi[2],
-                                   trkmom_parPi[0], trkmom_parPi[1], trkmom_parPi[2]};
-        float trkpar_KFKa[6] = {trkpos_parKa[0], trkpos_parKa[1], trkpos_parKa[2],
-                                   trkmom_parKa[0], trkmom_parKa[1], trkmom_parKa[2]};
-        float trkcov_KFPi[21];
-        float trkcov_KFKa[21];
-        for (int i = 0; i < 21; i++) {
-          trkcov_KFPi[i] = trk_covPi[i];
-          trkcov_KFKa[i] = trk_covKa[i];
-        }
-
-        KFPTrack kfpTrackPi;
-        KFPTrack kfpTrackKa;
-        kfpTrackPi.SetParameters(trkpar_KFPi);
-        kfpTrackPi.SetCovarianceMatrix(trkcov_KFPi);
-        kfpTrackKa.SetParameters(trkpar_KFKa);
-        kfpTrackKa.SetCovarianceMatrix(trkcov_KFKa);
-
-        if (CandD0) {
-          kfpTrackPi.SetCharge(1);
-          kfpTrackKa.SetCharge(-1);
-        } 
-        else if (CandD0bar) {
-          kfpTrackPi.SetCharge(-1);
-          kfpTrackKa.SetCharge(1);
-        }
-        /// Add these quantities!
-        kfpTrackPi.SetNDF(1); // Which is the correct number?
-        kfpTrackKa.SetNDF(1); // Which is the correct number?
-        //kfpTrack.SetChi2(...);
-
-        KFParticle KFPion(kfpTrackPi, 211);
-        KFParticle KFKaon(kfpTrackKa, 321);
-
-
-
-        /// fill track parameters
-        histos.fill(HIST("TracksKFPi/x"), kfpTrackPi.GetX());
-        histos.fill(HIST("TracksKFPi/y"), kfpTrackPi.GetY());
-        histos.fill(HIST("TracksKFPi/z"), kfpTrackPi.GetZ());
-        histos.fill(HIST("TracksKFPi/px"), kfpTrackPi.GetPx());
-        histos.fill(HIST("TracksKFPi/py"), kfpTrackPi.GetPy());
-        histos.fill(HIST("TracksKFPi/pz"), kfpTrackPi.GetPz());
-        histos.fill(HIST("TracksKFPi/chi2perNDF"), kfpTrackPi.GetChi2perNDF());
-        histos.fill(HIST("TracksKFPi/dcaXY"), KFPion.GetDistanceFromVertexXY(kfpVertex));
-        histos.fill(HIST("TracksKFPi/length"), KFPion.GetDecayLength());
-
-        histos.fill(HIST("TracksKFKa/x"), kfpTrackKa.GetX());
-        histos.fill(HIST("TracksKFKa/y"), kfpTrackKa.GetY());
-        histos.fill(HIST("TracksKFKa/z"), kfpTrackKa.GetZ());
-        histos.fill(HIST("TracksKFKa/px"), kfpTrackKa.GetPx());
-        histos.fill(HIST("TracksKFKa/py"), kfpTrackKa.GetPy());
-        histos.fill(HIST("TracksKFKa/pz"), kfpTrackKa.GetPz());
-        histos.fill(HIST("TracksKFKa/chi2perNDF"), kfpTrackKa.GetChi2perNDF());
-        histos.fill(HIST("TracksKFPi/dcaXY"), KFKaon.GetDistanceFromVertexXY(kfpVertex));
-        histos.fill(HIST("TracksKFPi/length"), KFKaon.GetDecayLength());
-
-        KFParticle KFDZero;
-        const KFParticle *D0Daughters[2] = {&KFPion, &KFKaon};
-        int NDaughters = 2;
-        KFDZero.SetConstructMethod(2);
-        KFDZero.Construct(D0Daughters, NDaughters, &KFPV);
-
-        float X=0., Y=0.,Z=0., E=0., Chi2=0., NDF=0., P=0., Pt=0., Eta=0., Phi=0., mass=0., decayLength=0., decayLengthxy=0., cosPA=-1., lifeTime=0., massErr=0., decayLengthErr=0.;
-        bool atProductionVertex = false;
-        float distToPV=0., deviationToPV=0., distToPVxy=0., deviationToPVxy=0.;
-
-        X=KFDZero.GetX();
-        Y=KFDZero.GetY();
-        Z=KFDZero.GetZ();
-        E=KFDZero.GetE();
-        Chi2=KFDZero.GetChi2();
-        NDF=KFDZero.GetNDF();
-        P=KFDZero.GetP();
-        Pt=KFDZero.GetPt();
-        Eta=KFDZero.GetEta();
-        Phi=KFDZero.GetPhi();
-        mass=KFDZero.GetMass();
-        decayLength=KFDZero.GetDecayLength();
-        decayLengthxy=KFDZero.GetDecayLengthXY();
-        cosPA=CosPointingAngleFromKF(KFPV, KFDZero);
-        lifeTime=KFDZero.GetLifeTime();
-        massErr=KFDZero.GetErrMass();
-        decayLengthErr=KFDZero.GetErrDecayLength();
-        distToPV=KFDZero.GetDistanceFromVertex(KFPV);
-        deviationToPV=KFDZero.GetDeviationFromVertex(KFPV);
-        distToPVxy=KFDZero.GetDistanceFromVertexXY(KFPV);
-        deviationToPVxy=KFDZero.GetDeviationFromVertexXY(KFPV);
-        atProductionVertex=KFDZero.GetAtProductionVertex();
-
-        /// Remove daughter tracks from PV fit?
-        /// Pt selection
-        if (Pt<pTMinD0 || Pt>pTMaxD0) {
-          continue;
-        }
-        /// Mass window selection
-        if (mass<massMinD0 || mass>massMaxD0) {
-          continue;
-        }
-        /// cosine pointing anle selection
-        if (cosPA < d_cosPA) {
-          continue;
-        }
-        /// decay length selection
-        if (decayLength<d_decayLength) {
-          continue;
-        }
-        
-        histos.fill(HIST("DZeroCand/atProductionVertex"), atProductionVertex);
-        histos.fill(HIST("DZeroCand/X"), X);
-        histos.fill(HIST("DZeroCand/Y"), Y);
-        histos.fill(HIST("DZeroCand/Z"), Z);
-        histos.fill(HIST("DZeroCand/E"), E);
-        histos.fill(HIST("DZeroCand/Chi2"), Chi2);
-        histos.fill(HIST("DZeroCand/NDF"), NDF);
-        histos.fill(HIST("DZeroCand/p"), P);
-        histos.fill(HIST("DZeroCand/pt"), Pt);
-        histos.fill(HIST("DZeroCand/eta"), Eta);
-        histos.fill(HIST("DZeroCand/phi"), Phi);
-        histos.fill(HIST("DZeroCand/mass"), mass);
-        histos.fill(HIST("DZeroCand/massvspt"), Pt, mass);
-        histos.fill(HIST("DZeroCand/decayLength"), decayLength);
-        histos.fill(HIST("DZeroCand/decayLengthXY"), decayLengthxy);
-        histos.fill(HIST("DZeroCand/cosPA"), cosPA);
-        histos.fill(HIST("DZeroCand/lifetime"), lifeTime);
-        histos.fill(HIST("DZeroCand/massErr"), massErr);
-        histos.fill(HIST("DZeroCand/massErr"), massErr);
-        histos.fill(HIST("DZeroCand/decayLengthErr"), decayLengthErr);
-        histos.fill(HIST("DZeroCand/decayLengthErr"), decayLengthErr);
-        histos.fill(HIST("DZeroCand/distToPV"), distToPV);
-        histos.fill(HIST("DZeroCand/deviationToPV"), deviationToPV);
-        histos.fill(HIST("DZeroCand/distToPVXY"), distToPVxy);
-        histos.fill(HIST("DZeroCand/deviationToPVXY"), deviationToPVxy);
-        
-
-
-        /// Add the secondary vertex and quantities of daughter particles
-        // KFDZero.TransportToDecayVertex();
-        // float distToPVPi=0., distToPVKa=0. dcaBetweenTracks=0.;
-        // distToPVPi = KFPion.GetDistanceFromVertex(KFPV);
-        // distToPVKa = KFKaon.GetDistanceFromVertex(KFPV);
-        // dcaBetweenTracks = KFPion.GetDistanceFromParticle(KFKaon);
-
-
-      }
+    //   /// Add the secondary vertex and quantities of daughter particles
+    //   // float distToPVPi=0., distToPVKa=0. dcaBetweenTracks=0.;
+    //   // distToPVPi = KFPion.GetDistanceFromVertex(KFPV);
+    //   // distToPVKa = KFKaon.GetDistanceFromVertex(KFPV);
+    //   // dcaBetweenTracks = KFPion.GetDistanceFromParticle(KFKaon);
 
 
     }
