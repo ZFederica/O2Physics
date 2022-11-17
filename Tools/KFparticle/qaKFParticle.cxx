@@ -31,6 +31,7 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
@@ -67,7 +68,7 @@ struct qaKFParticle {
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
-  double magneticField = 0.; 
+  double magneticField = 0.;
 
   /// Histogram Configurables
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
@@ -103,26 +104,26 @@ struct qaKFParticle {
   // 4 kQualityTracks
   // 5 kInAcceptanceTracks
   Filter trackFilter = (trackSelection.node() == 0) ||
-                      ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
-                      ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
-                      ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
-                      ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
-                      ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+                       ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
+                       ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+                       ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
+                       ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
+                       ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
 
-  using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
-  using TrackTableData = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa,aod::pidTOFFullPi, aod::pidTOFFullKa>;
-  Partition<TrackTableData> tracksFiltered = (trackSelection.node() == 0) ||
-                      ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
-                      ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
-                      ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
-                      ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
-                      ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
- 
+  using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
+  using TrackTableData = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCov, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::pidTOFFullKa>;
+  // Partition<TrackTableData> tracksFiltered = (trackSelection.node() == 0) ||
+  //                     ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
+  //                     ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
+  //                     ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
+  //                     ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
+  //                     ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+
   HistogramRegistry histos;
 
   void initMagneticFieldCCDB(o2::aod::BCsWithTimestamps::iterator const& bc, int& mRunNumber,
-              o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, std::string ccdbPathGrp, o2::base::MatLayerCylSet* lut,
-              bool isRun3)
+                             o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, std::string ccdbPathGrp, o2::base::MatLayerCylSet* lut,
+                             bool isRun3)
   {
 
     if (mRunNumber != bc.runNumber()) {
@@ -148,7 +149,6 @@ struct qaKFParticle {
       mRunNumber = bc.runNumber();
     }
   } /// end initMagneticFieldCCDB
-
 
   void init(InitContext const&)
   {
@@ -236,7 +236,7 @@ struct qaKFParticle {
     histos.add("DZeroCand/eta", "eta", kTH1D, {{100, -2., 2.}});
     histos.add("DZeroCand/phi", "phi", kTH1D, {{100, 0., 3.6}});
     histos.add("DZeroCand/mass", "mass", kTH1D, {{430, 1.65, 2.08}});
-    histos.add("DZeroCand/massvspt", "mass vs pt", kTH2D, {{axisParPX},{430, 1.65, 2.08}});
+    histos.add("DZeroCand/massvspt", "mass vs pt", kTH2D, {{axisParPX}, {430, 1.65, 2.08}});
     histos.add("DZeroCand/decayLength", "decay length [cm]", kTH1D, {{200, 0., 2.}});
     histos.add("DZeroCand/decayLengthXY", "decay length in xy plane [cm]", kTH1D, {{200, 0., 2.}});
     histos.add("DZeroCand/cosPA", "cosine of pointing angle", kTH1D, {{100, -1, 1.}});
@@ -247,8 +247,6 @@ struct qaKFParticle {
     histos.add("DZeroCand/deviationToPV", "deviation to PV", kTH1D, {{200, 0., 20.}});
     histos.add("DZeroCand/distToPVXY", "distance to PV in xy plane", kTH1D, {{200, 0., 2.}});
     histos.add("DZeroCand/deviationToPVXY", "deviation to PV in xy plane", kTH1D, {{200, 0., 20.}});
-
-
   }
 
   /// Function to select collisions
@@ -273,13 +271,16 @@ struct qaKFParticle {
     p[1] = kfp.GetPy();
     p[2] = kfp.GetPz();
 
-    float ptimesv2 = (p[0]*p[0]+p[1]*p[1]+p[2]*p[2])*(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]);
+    float ptimesv2 = (p[0] * p[0] + p[1] * p[1] + p[2] * p[2]) * (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 
-    if ( ptimesv2<=0 ) return 0.;
+    if (ptimesv2 <= 0)
+      return 0.;
     else {
-      double cos = (v[0]*p[0]+v[1]*p[1]+v[2]*p[2]) / sqrt(ptimesv2);
-      if(cos >  1.0) cos =  1.0;
-      if(cos < -1.0) cos = -1.0;
+      double cos = (v[0] * p[0] + v[1] * p[1] + v[2] * p[2]) / sqrt(ptimesv2);
+      if (cos > 1.0)
+        cos = 1.0;
+      if (cos < -1.0)
+        cos = -1.0;
       return cos;
     }
   }
@@ -294,13 +295,16 @@ struct qaKFParticle {
     p[0] = kfp.GetPx();
     p[1] = kfp.GetPy();
 
-    float ptimesv2 = (p[0]*p[0]+p[1]*p[1])*(v[0]*v[0]+v[1]*v[1]);
+    float ptimesv2 = (p[0] * p[0] + p[1] * p[1]) * (v[0] * v[0] + v[1] * v[1]);
 
-    if ( ptimesv2<=0 ) return 0.;
+    if (ptimesv2 <= 0)
+      return 0.;
     else {
-      double cos = (v[0]*p[0]+v[1]*p[1]) / sqrt(ptimesv2);
-      if(cos >  1.0) cos =  1.0;
-      if(cos < -1.0) cos = -1.0;
+      double cos = (v[0] * p[0] + v[1] * p[1]) / sqrt(ptimesv2);
+      if (cos > 1.0)
+        cos = 1.0;
+      if (cos < -1.0)
+        cos = -1.0;
       return cos;
     }
   }
@@ -326,8 +330,8 @@ struct qaKFParticle {
     /// CAREFUL!!!!!! Covariance matrix elements yy and xz are switched until a central fix is provided!!!!!
     kfpVertex.SetCovarianceMatrix(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ());
     kfpVertex.SetChi2(collision.chi2());
-    kfpVertex.SetNDF(2); //?? What number should I put here?
-    kfpVertex.SetNContributors(collision.numContrib());
+    kfpVertex.SetNDF(2 * collision.multNTracksPV() - 3);
+    kfpVertex.SetNContributors(collision.multNTracksPV());
 
     KFParticle KFPV(kfpVertex);
 
@@ -358,7 +362,7 @@ struct qaKFParticle {
       auto track2p = track2.p();
 
       o2::track::TrackParametrizationWithError trackparCovPi;
-      o2::track::TrackParametrizationWithError trackparCovKa; 
+      o2::track::TrackParametrizationWithError trackparCovKa;
 
       bool CandD0 = false;
       bool CandD0bar = false;
@@ -370,40 +374,33 @@ struct qaKFParticle {
           CandD0 = true;
           trackparCovPi = getTrackParCov(track1);
           trackparCovKa = getTrackParCov(track2);
-        }
-        else if (track1.sign() == -1 && track2.sign() == 1) {
+        } else if (track1.sign() == -1 && track2.sign() == 1) {
           CandD0bar = true;
           trackparCovPi = getTrackParCov(track1);
           trackparCovKa = getTrackParCov(track2);
-        }
-        else {
+        } else {
           continue;
         }
-      }
-      else if(nSigmaTPCMinKa <= track1.tpcNSigmaKa() && track1.tpcNSigmaKa() <= nSigmaTPCMaxKa && nSigmaTPCMinPi <= track2.tpcNSigmaPi() && track2.tpcNSigmaPi() <= nSigmaTPCMaxPi) {
+      } else if (nSigmaTPCMinKa <= track1.tpcNSigmaKa() && track1.tpcNSigmaKa() <= nSigmaTPCMaxKa && nSigmaTPCMinPi <= track2.tpcNSigmaPi() && track2.tpcNSigmaPi() <= nSigmaTPCMaxPi) {
         if (track1.sign() == 1 && track2.sign() == -1) {
           CandD0bar = true;
           trackparCovPi = getTrackParCov(track2);
           trackparCovKa = getTrackParCov(track1);
-        }
-        else if (track1.sign() == -1 && track2.sign() == 1) {
+        } else if (track1.sign() == -1 && track2.sign() == 1) {
           CandD0 = true;
           trackparCovPi = getTrackParCov(track2);
           trackparCovKa = getTrackParCov(track1);
-        }
-        else {
+        } else {
           continue;
         }
-      }
-      else {
+      } else {
         continue;
       }
 
       /// Apply single track cuts as a prefilter on the daughter tracks.
-      if (track1p < pTMin || abs(track1.eta())>etaRange || track2p < pTMin || abs(track2.eta())>etaRange) {
+      if (track1p < pTMin || abs(track1.eta()) > etaRange || track2p < pTMin || abs(track2.eta()) > etaRange) {
         continue;
       }
-    
 
       /// Keep in mind that in the track table the parameters are stored after propagation to the DCA to the PV.
       /// Check if we need to get another table. Or where the parameters might have to be propagated.
@@ -414,7 +411,6 @@ struct qaKFParticle {
       array<float, 21> trk_covPi;
       array<float, 21> trk_covKa;
 
-
       trackparCovPi.getXYZGlo(trkpos_parPi);
       trackparCovPi.getPxPyPzGlo(trkmom_parPi);
       trackparCovPi.getCovXYZPxPyPzGlo(trk_covPi);
@@ -422,9 +418,9 @@ struct qaKFParticle {
       trackparCovKa.getPxPyPzGlo(trkmom_parKa);
       trackparCovKa.getCovXYZPxPyPzGlo(trk_covKa);
       float trkpar_KFPi[6] = {trkpos_parPi[0], trkpos_parPi[1], trkpos_parPi[2],
-                                 trkmom_parPi[0], trkmom_parPi[1], trkmom_parPi[2]};
+                              trkmom_parPi[0], trkmom_parPi[1], trkmom_parPi[2]};
       float trkpar_KFKa[6] = {trkpos_parKa[0], trkpos_parKa[1], trkpos_parKa[2],
-                                 trkmom_parKa[0], trkmom_parKa[1], trkmom_parKa[2]};
+                              trkmom_parKa[0], trkmom_parKa[1], trkmom_parKa[2]};
       float trkcov_KFPi[21];
       float trkcov_KFKa[21];
       for (int i = 0; i < 21; i++) {
@@ -442,20 +438,17 @@ struct qaKFParticle {
       if (CandD0) {
         kfpTrackPi.SetCharge(1);
         kfpTrackKa.SetCharge(-1);
-      } 
-      else if (CandD0bar) {
+      } else if (CandD0bar) {
         kfpTrackPi.SetCharge(-1);
         kfpTrackKa.SetCharge(1);
       }
       /// Add these quantities!
       kfpTrackPi.SetNDF(1); // Which is the correct number?
       kfpTrackKa.SetNDF(1); // Which is the correct number?
-      //kfpTrack.SetChi2(...);
+      // kfpTrack.SetChi2(...);
 
       KFParticle KFPion(kfpTrackPi, 211);
       KFParticle KFKaon(kfpTrackKa, 321);
-
-
 
       /// fill track parameters
       histos.fill(HIST("TracksKFPi/x"), kfpTrackPi.GetX());
@@ -479,48 +472,48 @@ struct qaKFParticle {
       histos.fill(HIST("TracksKFKa/length"), KFKaon.GetDecayLength());
 
       KFParticle KFDZero;
-      const KFParticle *D0Daughters[2] = {&KFPion, &KFKaon};
+      const KFParticle* D0Daughters[2] = {&KFPion, &KFKaon};
       int NDaughters = 2;
       KFDZero.SetConstructMethod(2);
       KFDZero.Construct(D0Daughters, NDaughters, &KFPV);
 
-      float X=0., Y=0.,Z=0., E=0., Chi2=0., NDF=0., P=0., Pt=0., Eta=0., Phi=0., mass=0., decayLength=0., decayLengthxy=0., cosPA=-1., lifeTime=0., massErr=0., decayLengthErr=0.;
+      float X = 0., Y = 0., Z = 0., E = 0., Chi2 = 0., NDF = 0., P = 0., Pt = 0., Eta = 0., Phi = 0., mass = 0., decayLength = 0., decayLengthxy = 0., cosPA = -1., lifeTime = 0., massErr = 0., decayLengthErr = 0.;
       bool atProductionVertex = false;
-      float distToPV=0., deviationToPV=0., distToPVxy=0., deviationToPVxy=0.;
+      float distToPV = 0., deviationToPV = 0., distToPVxy = 0., deviationToPVxy = 0.;
 
       KFParticle KFDZero_DecayVtx = KFDZero;
       KFDZero_DecayVtx.TransportToDecayVertex();
 
-      X=KFDZero.GetX();
-      Y=KFDZero.GetY();
-      Z=KFDZero.GetZ();
-      E=KFDZero.GetE();
-      Chi2=KFDZero.GetChi2();
-      NDF=KFDZero.GetNDF();
-      P=KFDZero.GetP();
-      Pt=KFDZero.GetPt();
-      Eta=KFDZero.GetEta();
-      Phi=KFDZero.GetPhi();
-      mass=KFDZero.GetMass();
-      decayLength=KFDZero.GetDecayLength();
-      decayLengthxy=KFDZero.GetDecayLengthXY();
-      cosPA=CosPointingAngleFromKF(KFDZero_DecayVtx, KFPV);
-      lifeTime=KFDZero.GetLifeTime();
-      massErr=KFDZero.GetErrMass();
-      decayLengthErr=KFDZero.GetErrDecayLength();
-      distToPV=KFDZero.GetDistanceFromVertex(KFPV);
-      deviationToPV=KFDZero.GetDeviationFromVertex(KFPV);
-      distToPVxy=KFDZero.GetDistanceFromVertexXY(KFPV);
-      deviationToPVxy=KFDZero.GetDeviationFromVertexXY(KFPV);
-      atProductionVertex=KFDZero.GetAtProductionVertex();
+      X = KFDZero.GetX();
+      Y = KFDZero.GetY();
+      Z = KFDZero.GetZ();
+      E = KFDZero.GetE();
+      Chi2 = KFDZero.GetChi2();
+      NDF = KFDZero.GetNDF();
+      P = KFDZero.GetP();
+      Pt = KFDZero.GetPt();
+      Eta = KFDZero.GetEta();
+      Phi = KFDZero.GetPhi();
+      mass = KFDZero.GetMass();
+      decayLength = KFDZero.GetDecayLength();
+      decayLengthxy = KFDZero.GetDecayLengthXY();
+      cosPA = CosPointingAngleFromKF(KFDZero_DecayVtx, KFPV);
+      lifeTime = KFDZero.GetLifeTime();
+      massErr = KFDZero.GetErrMass();
+      decayLengthErr = KFDZero.GetErrDecayLength();
+      distToPV = KFDZero.GetDistanceFromVertex(KFPV);
+      deviationToPV = KFDZero.GetDeviationFromVertex(KFPV);
+      distToPVxy = KFDZero.GetDistanceFromVertexXY(KFPV);
+      deviationToPVxy = KFDZero.GetDeviationFromVertexXY(KFPV);
+      atProductionVertex = KFDZero.GetAtProductionVertex();
 
       /// Remove daughter tracks from PV fit?
       /// Pt selection
-      if (Pt<pTMinD0 || Pt>pTMaxD0) {
+      if (Pt < pTMinD0 || Pt > pTMaxD0) {
         continue;
       }
       /// Mass window selection
-      if (mass<massMinD0 || mass>massMaxD0) {
+      if (mass < massMinD0 || mass > massMaxD0) {
         continue;
       }
       /// cosine pointing anle selection
@@ -528,10 +521,10 @@ struct qaKFParticle {
         continue;
       }
       /// decay length selection
-      if (decayLength<d_decayLength) {
+      if (decayLength < d_decayLength) {
         continue;
       }
-      
+
       histos.fill(HIST("DZeroCand/atProductionVertex"), atProductionVertex);
       histos.fill(HIST("DZeroCand/X"), X);
       histos.fill(HIST("DZeroCand/Y"), Y);
@@ -557,17 +550,12 @@ struct qaKFParticle {
       histos.fill(HIST("DZeroCand/deviationToPV"), deviationToPV);
       histos.fill(HIST("DZeroCand/distToPVXY"), distToPVxy);
       histos.fill(HIST("DZeroCand/deviationToPVXY"), deviationToPVxy);
-      
-      
 
-
-    //   /// Add the secondary vertex and quantities of daughter particles
-    //   // float distToPVPi=0., distToPVKa=0. dcaBetweenTracks=0.;
-    //   // distToPVPi = KFPion.GetDistanceFromVertex(KFPV);
-    //   // distToPVKa = KFKaon.GetDistanceFromVertex(KFPV);
-    //   // dcaBetweenTracks = KFPion.GetDistanceFromParticle(KFKaon);
-
-
+      //   /// Add the secondary vertex and quantities of daughter particles
+      //   // float distToPVPi=0., distToPVKa=0. dcaBetweenTracks=0.;
+      //   // distToPVPi = KFPion.GetDistanceFromVertex(KFPV);
+      //   // distToPVKa = KFKaon.GetDistanceFromVertex(KFPV);
+      //   // dcaBetweenTracks = KFPion.GetDistanceFromParticle(KFKaon);
     }
   }
   PROCESS_SWITCH(qaKFParticle, processData, "process data", true);
