@@ -32,7 +32,7 @@ AxisSpec ZAxis = {301, -30.1, 30.1};
 AxisSpec DeltaZAxis = {61, -6.1, 6.1};
 AxisSpec DCAAxis = {601, -3.01, 3.01};
 AxisSpec EtaAxis = {22, -2.2, 2.2};
-AxisSpec MultAxis = {301, -0.5, 300.5};
+// AxisSpec MultAxis = {301, -0.5, 300.5};
 AxisSpec PhiAxis = {629, 0, 2 * M_PI};
 AxisSpec PtAxis = {2401, -0.005, 24.005};
 AxisSpec PtAxis_wide = {1041, -0.05, 104.05};
@@ -57,24 +57,26 @@ struct MultiplicityCounter {
   Configurable<float> estimatorEta{"estimatorEta", 1.0, "eta range for INEL>0 sample definition"};
   Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
   Configurable<bool> fillResponse{"fillResponse", false, "Fill response matrix"};
+  ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, ""};
 
   HistogramRegistry registry{
     "registry",
     {
-      {"Events/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}},                           //
       {"Tracks/EtaZvtx", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},                                //
       {"Tracks/EtaZvtx_gt0", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},                            //
       {"Tracks/PhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},                                    //
       {"Tracks/Control/PtEta", " ; p_{T} (GeV/c); #eta", {HistType::kTH2F, {PtAxis, EtaAxis}}},                               //
       {"Tracks/Control/DCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},                   //
       {"Tracks/Control/DCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},                     //
+      {"Tracks/Control/ReassignedDCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},         //
+      {"Tracks/Control/ReassignedDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},           //
+      {"Tracks/Control/ExtraDCAXYPt", " ; p_{T} (GeV/c) ; DCA_{XY} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},              //
+      {"Tracks/Control/ExtraDCAZPt", " ; p_{T} (GeV/c) ; DCA_{Z} (cm)", {HistType::kTH2F, {PtAxis, DCAAxis}}},                //
       {"Tracks/Control/ExtraTracksEtaZvtx", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},             //
       {"Tracks/Control/ExtraTracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},                 //
       {"Tracks/Control/ReassignedTracksEtaZvtx", "; #eta; Z_{vtx} (cm); tracks", {HistType::kTH2F, {EtaAxis, ZAxis}}},        //
       {"Tracks/Control/ReassignedTracksPhiEta", "; #varphi; #eta; tracks", {HistType::kTH2F, {PhiAxis, EtaAxis}}},            //
       {"Tracks/Control/ReassignedVertexCorr", "; Z_{vtx}^{orig} (cm); Z_{vtx}^{re} (cm)", {HistType::kTH2F, {ZAxis, ZAxis}}}, //
-      {"Tracks/Control/ReassignedEtaCorr", "; #eta^{orig}; #eta^{re}", {HistType::kTH2F, {EtaAxis, EtaAxis}}},                //
-      {"Tracks/Control/ReassignedPtCorr", "; p^{orig}_{T}; p^{re}_{T}", {HistType::kTH2F, {PtAxis_wide, PtAxis_wide}}},       //
       {"Events/Selection", ";status;events", {HistType::kTH1F, {{7, 0.5, 7.5}}}},                                             //
       {"Events/Control/Chi2", " ; #chi^2", {HistType::kTH1F, {{101, -0.1, 10.1}}}},                                           //
       {"Events/Control/TimeResolution", " ; t (ms)", {HistType::kTH1F, {{1001, -0.1, 100.1}}}}                                //
@@ -85,6 +87,9 @@ struct MultiplicityCounter {
 
   void init(InitContext&)
   {
+    AxisSpec MultAxis = {multBinning, "N_{trk}"};
+    registry.add({"Events/NtrkZvtx", "; N_{trk}; Z_{vtx} (cm); events", {HistType::kTH2F, {MultAxis, ZAxis}}});
+
     auto hstat = registry.get<TH1>(HIST("Events/Selection"));
     auto* x = hstat->GetXaxis();
     x->SetBinLabel(1, "All");
@@ -194,7 +199,7 @@ struct MultiplicityCounter {
   void processCounting(
     ExCols::iterator const& collision,
     FiTracks const& tracks,
-    soa::SmallGroups<aod::ReassignedTracks> const& atracks) // soa::Join<aod::AmbiguousTracks, aod::BestCollisions>
+    soa::SmallGroups<aod::ReassignedTracksCore> const& atracks)
   {
     registry.fill(HIST("Events/Selection"), 1.);
     if (!useEvSel || collision.sel8()) {
@@ -204,26 +209,28 @@ struct MultiplicityCounter {
 
       auto Ntrks = 0;
       for (auto& track : atracks) {
+        auto otrack = track.track_as<FiTracks>();
         usedTracksIds.emplace_back(track.trackId());
-        if (std::abs(track.etas()) < estimatorEta) {
+        if (std::abs(otrack.eta()) < estimatorEta) {
           ++Ntrks;
         }
-        registry.fill(HIST("Tracks/EtaZvtx"), track.etas(), z);
-        registry.fill(HIST("Tracks/PhiEta"), track.phis(), track.etas());
-        auto otrack = track.track_as<FiTracks>();
+        registry.fill(HIST("Tracks/EtaZvtx"), otrack.eta(), z);
+        registry.fill(HIST("Tracks/PhiEta"), otrack.phi(), otrack.eta());
         if (!otrack.has_collision()) {
-          registry.fill(HIST("Tracks/Control/ExtraTracksEtaZvtx"), track.etas(), z);
-          registry.fill(HIST("Tracks/Control/ExtraTracksPhiEta"), track.phis(), track.etas());
+          registry.fill(HIST("Tracks/Control/ExtraTracksEtaZvtx"), otrack.eta(), z);
+          registry.fill(HIST("Tracks/Control/ExtraTracksPhiEta"), otrack.phi(), otrack.eta());
+          registry.fill(HIST("Tracks/Control/ExtraDCAXYPt"), otrack.pt(), track.bestDCAXY());
+          registry.fill(HIST("Tracks/Control/ExtraDCAZPt"), otrack.pt(), track.bestDCAZ());
         } else if (otrack.collisionId() != track.bestCollisionId()) {
-          registry.fill(HIST("Tracks/Control/ReassignedTracksEtaZvtx"), track.etas(), z);
-          registry.fill(HIST("Tracks/Control/ReassignedTracksPhiEta"), track.phis(), track.etas());
+          registry.fill(HIST("Tracks/Control/ReassignedTracksEtaZvtx"), otrack.eta(), z);
+          registry.fill(HIST("Tracks/Control/ReassignedTracksPhiEta"), otrack.phi(), otrack.eta());
           registry.fill(HIST("Tracks/Control/ReassignedVertexCorr"), otrack.collision_as<ExCols>().posZ(), z);
-          registry.fill(HIST("Tracks/Control/ReassignedEtaCorr"), otrack.eta(), track.etas());
-          registry.fill(HIST("Tracks/Control/ReassignedPtCorr"), otrack.pt(), track.pts());
+          registry.fill(HIST("Tracks/Control/ReassignedDCAXYPt"), otrack.pt(), track.bestDCAXY());
+          registry.fill(HIST("Tracks/Control/ReassignedDCAZPt"), otrack.pt(), track.bestDCAZ());
         }
-        registry.fill(HIST("Tracks/Control/PtEta"), track.pts(), track.etas());
-        registry.fill(HIST("Tracks/Control/DCAXYPt"), track.pts(), track.bestDCAXY());
-        registry.fill(HIST("Tracks/Control/DCAZPt"), track.pts(), track.bestDCAZ());
+        registry.fill(HIST("Tracks/Control/PtEta"), otrack.pt(), otrack.eta());
+        registry.fill(HIST("Tracks/Control/DCAXYPt"), otrack.pt(), track.bestDCAXY());
+        registry.fill(HIST("Tracks/Control/DCAZPt"), otrack.pt(), track.bestDCAZ());
       }
       for (auto& track : tracks) {
         if (std::find(usedTracksIds.begin(), usedTracksIds.end(), track.globalIndex()) != usedTracksIds.end()) {
@@ -242,7 +249,7 @@ struct MultiplicityCounter {
       if (Ntrks > 0) {
         registry.fill(HIST("Events/Selection"), 3.);
         for (auto& track : atracks) {
-          registry.fill(HIST("Tracks/EtaZvtx_gt0"), track.etas(), z);
+          registry.fill(HIST("Tracks/EtaZvtx_gt0"), track.track_as<FiTracks>().eta(), z);
         }
         for (auto& track : tracks) {
           if (std::find(usedTracksIds.begin(), usedTracksIds.end(), track.globalIndex()) != usedTracksIds.end()) {
@@ -361,7 +368,7 @@ struct MultiplicityCounter {
     soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
     aod::McCollisions const&, Particles const& mcParticles,
     soa::Filtered<LabeledTracksEx> const&,
-    soa::SmallGroups<aod::ReassignedTracks> const& atracks)
+    soa::SmallGroups<aod::ReassignedTracksCore> const& atracks)
   {
     for (auto& collision : collisions) {
       if (useEvSel && !collision.sel8()) {
@@ -382,7 +389,7 @@ struct MultiplicityCounter {
         if (ttrack.has_mcParticle()) {
           registry.fill(HIST("Tracks/Control/PtEfficiency"), ttrack.mcParticle_as<Particles>().pt());
         } else {
-          registry.fill(HIST("Tracks/Control/PtEfficiencySecondaries"), track.pts());
+          registry.fill(HIST("Tracks/Control/PtEfficiencySecondaries"), ttrack.pt());
         }
       }
       for (auto& track : tracks) {

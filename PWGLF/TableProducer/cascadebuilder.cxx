@@ -31,6 +31,10 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <cmath>
+#include <array>
+#include <cstdlib>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -46,19 +50,15 @@
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
-#include <CCDB/BasicCCDBManager.h>
+#include "CCDB/BasicCCDBManager.h"
 
-#include <TFile.h>
-#include <TH2F.h>
-#include <TProfile.h>
-#include <TLorentzVector.h>
-#include <Math/Vector4D.h>
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include "Framework/ASoAHelpers.h"
+#include "TFile.h"
+#include "TH2F.h"
+#include "TProfile.h"
+#include "TLorentzVector.h"
+#include "Math/Vector4D.h"
+#include "TPDGCode.h"
+#include "TDatabasePDG.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -76,6 +76,11 @@ using LabeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 struct cascadeBuilder {
   Produces<aod::CascData> cascdata;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  HistogramRegistry registry{
+    "registry",
+    {{"hCatchedExceptions", "hCatchedExceptions", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}}},
+  };
 
   OutputObj<TH1F> hEventCounter{TH1F("hEventCounter", "", 1, 0, 1)};
   OutputObj<TH1F> hCascCandidate{TH1F("hCascCandidate", "", 20, 0, 20)};
@@ -139,12 +144,6 @@ struct cascadeBuilder {
 
     o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
     o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!grpo) {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-    }
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
       if (d_bz_input < -990) {
@@ -155,7 +154,18 @@ struct cascadeBuilder {
         d_bz = d_bz_input;
       }
     } else {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+      }
       o2::base::Propagator::initFieldFromGRP(grpmag);
+      if (d_bz_input < -990) {
+        // Fetch magnetic field from ccdb for current collision
+        d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+        LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+      } else {
+        d_bz = d_bz_input;
+      }
     }
     o2::base::Propagator::Instance()->setMatLUT(lut);
     mRunNumber = bc.runNumber();
@@ -347,7 +357,7 @@ struct cascadeBuilder {
         covV0[4] = covVtxV0(2, 1);
         covV0[5] = covVtxV0(2, 2);
 
-        const std::array<float, 3> vertex = {(float)v0vtx[0], (float)v0vtx[1], (float)v0vtx[2]};
+        const std::array<float, 3> vertex = {static_cast<float>(v0vtx[0]), static_cast<float>(v0vtx[1]), static_cast<float>(v0vtx[2])};
         const std::array<float, 3> momentum = {pvecpos[0] + pvecneg[0], pvecpos[1] + pvecneg[1], pvecpos[2] + pvecneg[2]};
 
         auto tV0 = o2::track::TrackParCov(vertex, momentum, covV0, 0);
@@ -356,8 +366,18 @@ struct cascadeBuilder {
         // Act on copies for minimization
         auto tV0Copy = o2::track::TrackParCov(tV0);
         auto bTrackCopy = o2::track::TrackParCov(bTrack);
+        int nCand2 = 0;
+        try {
+          nCand2 = fitterCasc.process(tV0Copy, bTrackCopy);
+          registry.fill(HIST("hCatchedExceptions"), 0.5f);
+        } catch (...) {
+          registry.fill(HIST("hCatchedExceptions"), 1.5f);
+          LOG(error) << "Exception caught in fitterCasc.process";
+        }
 
-        int nCand2 = fitterCasc.process(tV0Copy, bTrackCopy);
+        if (nCand2 == 0) {
+          continue;
+        }
         double finalXv0 = fitterCasc.getTrack(0).getX();
         double finalXbach = fitterCasc.getTrack(1).getX();
 
@@ -366,7 +386,7 @@ struct cascadeBuilder {
         bTrack.rotateParam(fitterCasc.getTrack(1).getAlpha());
 
         o2::base::Propagator::Instance()->propagateToX(tV0, finalXv0, d_bz, maxSnp, maxStep, matCorr);
-        //No material correction in V0 backpropagation to minimum
+        // No material correction in V0 backpropagation to minimum
         o2::base::Propagator::Instance()->propagateToX(bTrack, finalXbach, d_bz, maxSnp, maxStep, o2::base::Propagator::MatCorrType::USEMatCorrNONE);
 
         nCand2 = fitterCasc.process(tV0, bTrack);
@@ -442,6 +462,7 @@ struct cascadeLabelBuilder {
     "registry",
     {
       {"hLabelCounter", "hLabelCounter", {HistType::kTH1F, {{10, 0.0f, 10.0f}}}},
+      {"hCatchedExceptions", "hCatchedExceptions", {HistType::kTH1F, {{2, 0.0f, 2.0f}}}},
       {"hXiMinus", "hXiMinus", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
       {"hXiPlus", "hXiPlus", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
       {"hOmegaMinus", "hOmegaMinus", {HistType::kTH1F, {{100, 0.0f, 10.0f}}}},
