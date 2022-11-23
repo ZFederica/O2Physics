@@ -107,6 +107,8 @@ struct qaKFParticle {
   Configurable<float> d_deviationKaToSV{"d_deviationKaToSV", 1000., "maximum deviation Ka to SV"};
   Configurable<float> d_distKaToSV{"d_distKaToSV", 1000., "maximum distance Ka to SV"};
   Configurable<float> d_d0pid0ka{"d_d0pid0ka", -100000., "maximum product of impact parameters of daughters to the PV"};
+  /// Option to write D0 variables in a tree
+  Configurable<bool> writeTree{"writeTree", false, "write D0 variables in a tree"}; 
 
   // Define which track selection should be used:
   // 0 -> No track selection is applied
@@ -571,37 +573,40 @@ struct qaKFParticle {
       histos.fill(HIST("DZeroCand/distKaToSV"), distKaToSV);
       histos.fill(HIST("DZeroCand/d0pid0ka"), d0pid0ka);
 
-      /// Filling the D0 tree
-      rowDZeroTree(PtPi,
-      PtKa,
-      track1.tpcNSigmaPi(),
-      track2.tpcNSigmaPi(),
-      track1.tpcNSigmaKa(),
-      track2.tpcNSigmaKa(),
-      decaylengthPi,
-      decaylengthKa,
-      Pt,
-      mass,
-      decayLength,
-      decayLengthxy,
-      cosPA,
-      lifeTime,
-      normdecayLength,
-      distToPV,
-      deviationToPV,
-      distToPVxy,
-      deviationToPVxy,
-      deviationDaugtherTracks,
-      distanceDaugtherTracks,
-      distPiToSV,
-      deviationPiToSV,
-      distKaToSV,
-      deviationKaToSV,
-      distPiToPV,
-      distKaToPV,
-      d0pid0ka,
-      cosThetaStarPion,
-      cosThetaStarKaon);
+      if(writeTree) {
+        /// Filling the D0 tree
+        rowDZeroTree(PtPi,
+        PtKa,
+        track1.tpcNSigmaPi(),
+        track2.tpcNSigmaPi(),
+        track1.tpcNSigmaKa(),
+        track2.tpcNSigmaKa(),
+        decaylengthPi,
+        decaylengthKa,
+        Pt,
+        mass,
+        decayLength,
+        decayLengthxy,
+        cosPA,
+        lifeTime,
+        normdecayLength,
+        distToPV,
+        deviationToPV,
+        distToPVxy,
+        deviationToPVxy,
+        deviationDaugtherTracks,
+        distanceDaugtherTracks,
+        distPiToSV,
+        deviationPiToSV,
+        distKaToSV,
+        deviationKaToSV,
+        distPiToPV,
+        distKaToPV,
+        d0pid0ka,
+        cosThetaStarPion,
+        cosThetaStarKaon);
+      }
+
     }
   }
   PROCESS_SWITCH(qaKFParticle, processData, "process data", true);
