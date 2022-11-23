@@ -11,7 +11,7 @@
 
 ///
 /// \file   qaKFParticle.cxx
-/// \author Annalena Kalteyer <annalena.sophie.kalteyer@cern.ch>, CERN
+/// \author Annalena Kalteyer <annalena.sophie.kalteyer@cern.ch>, GSI Darmstadt
 /// \brief  Task to test the performance of the KFParticle package
 ///
 
@@ -36,15 +36,18 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "TableHelper.h"
+#include "Tools/KFparticle/KFUtilities.h"
+#include "Tools/KFparticle/qaKFParticle.h"
 #include <iostream>
 using namespace std;
 
-/// includes KFParticle
 #ifndef HomogeneousField
-#define HomogeneousField
-#endif
 
-#include <KFParticle.h>
+#define HomogeneousField
+
+#endif
+/// includes KFParticle
+#include "KFParticle.h"
 #include "KFPTrack.h"
 #include "KFPVertex.h"
 #include "KFParticleBase.h"
@@ -71,7 +74,7 @@ struct qaKFParticle {
   double magneticField = 0.;
 
   /// Histogram Configurables
-  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0}, ""};
+  ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 24., 36., 50.0}, ""};
 
   /// option to select good events
   Configurable<bool> eventSelection{"eventSelection", true, "select good events"}; // currently only sel8 is defined for run3
@@ -82,15 +85,28 @@ struct qaKFParticle {
   Configurable<float> nSigmaTPCMaxPi{"nSigmaTPCMaxPi", 3., "max number of sigma in the TPC for pion tracks"};
   Configurable<float> nSigmaTPCMinKa{"nSigmaTPCMinKa", -3., "min number of sigma in the TPC for kaon tracks"};
   Configurable<float> nSigmaTPCMaxKa{"nSigmaTPCMaxKa", 3., "max number of sigma in the TPC for kaon tracks"};
-  Configurable<float> pTMin{"pTMin", 0.3, "minimum momentum for tracks"};
-  Configurable<float> etaRange{"etaRange", 0.8, "eta Range for tracks"};
+  Configurable<float> d_pTMin{"d_pTMin", 0.3, "minimum momentum for tracks"};
+  Configurable<float> d_etaRange{"d_etaRange", 0.8, "eta Range for tracks"};
+  Configurable<float> d_dcaXYTrackPV{"d_dcaXYTrackPV", 2., "DCA XY of the daughter tracks to the PV"};
+  Configurable<float> d_dcaZTrackPV{"d_dcaZTrackPV", 10., "DCA Z of the daughter tracks to the PV"};
   /// D0 selections
-  Configurable<float> pTMinD0{"pTMinD0", 0., "minimum momentum for D0 candidates"};
-  Configurable<float> pTMaxD0{"pTMaxD0", 36., "maximum momentum for D0 candidates"};
-  Configurable<float> massMinD0{"massMinD0", 1.65, "minimum mass for D0"};
-  Configurable<float> massMaxD0{"massMaxD0", 2.08, "minimum mass for D0"};
+  Configurable<float> d_pTMinD0{"d_pTMinD0", 0., "minimum momentum for D0 candidates"};
+  Configurable<float> d_pTMaxD0{"d_pTMaxD0", 36., "maximum momentum for D0 candidates"};
+  Configurable<float> d_massMinD0{"d_massMinD0", 1.65, "minimum mass for D0"};
+  Configurable<float> d_massMaxD0{"d_massMaxD0", 2.08, "minimum mass for D0"};
   Configurable<float> d_cosPA{"d_cosPA", -1., "minimum cosine Pointing angle for D0"};
   Configurable<float> d_decayLength{"d_decayLength", 0., "minimum decay length for D0"};
+  Configurable<float> d_normdecayLength{"d_normdecayLength", 100., "minimum normalised decay length for D0"};
+  Configurable<float> d_chi2topoD0{"d_chi2topoD0", 1000., "maximum chi2 topological of D0 to PV"};
+  Configurable<float> d_chi23DSVDau{"d_chi23DSVDau", 1000., "maximum chi2 geometrical 3D daughter tracks at the SV"};
+  Configurable<float> d_dist3DSVDau{"d_dist3DSVDau", 1000., "maximum geometrical distance 3D daughter tracks at the SV"};
+  Configurable<float> d_cosThetaStarPi{"d_cosThetaStarPi", 1000., "maximum cosine theta star of the pion from D0"};
+  Configurable<float> d_cosThetaStarKa{"d_cosThetaStarKa", 1000., "maximum cosine theta star of the kaon from D0"};
+  Configurable<float> d_deviationPiToSV{"d_deviationPiToSV", 1000., "maximum deviation Pi to SV"};
+  Configurable<float> d_distPiToSV{"d_distPiToSV", 1000., "maximum distance Pi to SV"};
+  Configurable<float> d_deviationKaToSV{"d_deviationKaToSV", 1000., "maximum deviation Ka to SV"};
+  Configurable<float> d_distKaToSV{"d_distKaToSV", 1000., "maximum distance Ka to SV"};
+  Configurable<float> d_d0pid0ka{"d_d0pid0ka", -100000., "maximum product of impact parameters of daughters to the PV"};
 
   // Define which track selection should be used:
   // 0 -> No track selection is applied
@@ -120,6 +136,8 @@ struct qaKFParticle {
   //                     ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
 
   HistogramRegistry histos;
+  /// Table to be produced
+  Produces<o2::aod::TreeDZeroKF> rowDZeroTree;
 
   void initMagneticFieldCCDB(o2::aod::BCsWithTimestamps::iterator const& bc, int& mRunNumber,
                              o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, std::string ccdbPathGrp, o2::base::MatLayerCylSet* lut,
@@ -209,7 +227,7 @@ struct qaKFParticle {
     histos.add("TracksKFPi/pz", "track #it{p_{z}} momentum at dca in local coordinate system", kTH1D, {axisParPZ});
     histos.add("TracksKFPi/chi2perNDF", "Chi2/NDF of the track;#it{chi2/ndf};", kTH1D, {{200, 0.8, 1.2}});
     histos.add("TracksKFPi/dcaXY", "distance of closest approach in #it{xy} plane;#it{dcaXY} [cm];", kTH1D, {{200, -0.15, 0.15}});
-    histos.add("TracksKFPi/length", "track length in cm;#it{Length} [cm];", kTH1D, {{400, 0, 1000}});
+    histos.add("TracksKFPi/length", "track length in cm;#it{Length} [cm];", kTH1D, {{100, 0, 20}});
     // Add nsigma TPC
 
     histos.add("TracksKFKa/x", "track #it{x} position at dca in local coordinate system", kTH1D, {axisParX});
@@ -220,7 +238,7 @@ struct qaKFParticle {
     histos.add("TracksKFKa/pz", "track #it{p_{z}} momentum at dca in local coordinate system", kTH1D, {axisParPZ});
     histos.add("TracksKFKa/chi2perNDF", "Chi2/NDF of the track;#it{chi2/ndf};", kTH1D, {{200, 0.8, 1.2}});
     histos.add("TracksKFKa/dcaXY", "distance of closest approach in #it{xy} plane;#it{dcaXY} [cm];", kTH1D, {{200, -0.15, 0.15}});
-    histos.add("TracksKFKa/length", "track length in cm;#it{Length} [cm];", kTH1D, {{400, 0, 1000}});
+    histos.add("TracksKFKa/length", "track length in cm;#it{Length} [cm];", kTH1D, {{100, 0, 20}});
     // Add nsigma TPC
 
     /// D0 candidates
@@ -228,7 +246,7 @@ struct qaKFParticle {
     histos.add("DZeroCand/X", "X [cm]", kTH1D, {axisParX});
     histos.add("DZeroCand/Y", "Y [cm]", kTH1D, {axisParY});
     histos.add("DZeroCand/Z", "Z [cm]", kTH1D, {axisParZ});
-    histos.add("DZeroCand/E", "E", kTH1D, {{100, 0., 100.}});
+    histos.add("DZeroCand/E", "E", kTH1D, {{100, 0., 50.}});
     histos.add("DZeroCand/Chi2", "Chi2", kTH1D, {{100, 0., 100.}});
     histos.add("DZeroCand/NDF", "NDF", kTH1D, {{100, 0., 100.}});
     histos.add("DZeroCand/p", "momentum", kTH1D, {axisParPX});
@@ -243,70 +261,34 @@ struct qaKFParticle {
     histos.add("DZeroCand/lifetime", "life time", kTH1D, {{100, 0., 0.2}});
     histos.add("DZeroCand/massErr", "error mass", kTH1D, {{100, 0., 0.1}});
     histos.add("DZeroCand/decayLengthErr", "decay length error [cm]", kTH1D, {{200, 0., 0.2}});
-    histos.add("DZeroCand/distToPV", "distance to PV", kTH1D, {{200, 0., 2.}});
+    histos.add("DZeroCand/distToPV", "distance to PV", kTH1D, {{100, 0., 1.}});
     histos.add("DZeroCand/deviationToPV", "deviation to PV", kTH1D, {{200, 0., 20.}});
-    histos.add("DZeroCand/distToPVXY", "distance to PV in xy plane", kTH1D, {{200, 0., 2.}});
+    histos.add("DZeroCand/distToPVXY", "distance to PV in xy plane", kTH1D, {{100, 0., 1.}});
     histos.add("DZeroCand/deviationToPVXY", "deviation to PV in xy plane", kTH1D, {{200, 0., 20.}});
+    histos.add("DZeroCand/deviationDaugtherTracks", "chi2 in 3D of daughter tracks at the SV", kTH1D, {{200, 0., 0.2}});
+    histos.add("DZeroCand/distanceDaugtherTracks", "distance in 3D of daughter tracks at the SV", kTH1D, {{100, 0., 1.}});
+    histos.add("DZeroCand/cosThetaStarPion", "cosine theta star of the pion from D0", kTH1D, {{100, -10., 10.}});
+    histos.add("DZeroCand/cosThetaStarKaon", "cosine theta star of the kaon from D0", kTH1D, {{100, -10., 10}});
+    histos.add("DZeroCand/deviationPiToSV", "deviation of Pi to SV", kTH1D, {{200, 0., 20.}});
+    histos.add("DZeroCand/distPiToSV", "distance of Pi to SV", kTH1D, {{100, 0., 1.}});
+    histos.add("DZeroCand/deviationKaToSV", "deviation of Ka to SV", kTH1D, {{200, 0., 20.}});
+    histos.add("DZeroCand/distKaToSV", "distance of Ka to SV", kTH1D, {{100, 0., 1.}});
+    histos.add("DZeroCand/d0pid0ka", "product of impact parameters of daughters to the PV", kTH1D, {{100, -0.01, 0.01}});
   }
 
   /// Function to select collisions
   template <typename T>
   bool isSelectedCollision(const T& collision)
   {
+    /// Trigger selection
     if (eventSelection && !(isRun3 ? collision.sel8() : collision.sel7())) { // currently only sel8 is defined for run3
       return false;
     }
+    /// Reject collisions with negative covariance matrix elemts on the digonal
+    if (collision.covXX() < 0. || collision.covYY() < 0. || collision.covZZ() < 0.) {
+      return false;
+    }
     return true;
-  }
-
-  float CosPointingAngleFromKF(KFParticle kfp, KFParticle PV)
-  {
-    float v[3];
-    v[0] = kfp.GetX() - PV.GetX();
-    v[1] = kfp.GetY() - PV.GetY();
-    v[2] = kfp.GetZ() - PV.GetZ();
-
-    float p[3];
-    p[0] = kfp.GetPx();
-    p[1] = kfp.GetPy();
-    p[2] = kfp.GetPz();
-
-    float ptimesv2 = (p[0] * p[0] + p[1] * p[1] + p[2] * p[2]) * (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-
-    if (ptimesv2 <= 0)
-      return 0.;
-    else {
-      double cos = (v[0] * p[0] + v[1] * p[1] + v[2] * p[2]) / sqrt(ptimesv2);
-      if (cos > 1.0)
-        cos = 1.0;
-      if (cos < -1.0)
-        cos = -1.0;
-      return cos;
-    }
-  }
-
-  float CosPointingAngleXYFromKF(KFParticle kfp, KFParticle PV)
-  {
-    float v[3];
-    v[0] = kfp.GetX() - PV.GetX();
-    v[1] = kfp.GetY() - PV.GetY();
-
-    float p[3];
-    p[0] = kfp.GetPx();
-    p[1] = kfp.GetPy();
-
-    float ptimesv2 = (p[0] * p[0] + p[1] * p[1]) * (v[0] * v[0] + v[1] * v[1]);
-
-    if (ptimesv2 <= 0)
-      return 0.;
-    else {
-      double cos = (v[0] * p[0] + v[1] * p[1]) / sqrt(ptimesv2);
-      if (cos > 1.0)
-        cos = 1.0;
-      if (cos < -1.0)
-        cos = -1.0;
-      return cos;
-    }
   }
 
   /// Process function for data
@@ -325,14 +307,7 @@ struct qaKFParticle {
       return;
     }
     /// set KF primary vertex
-    KFPVertex kfpVertex;
-    kfpVertex.SetXYZ(collision.posX(), collision.posY(), collision.posZ());
-    /// CAREFUL!!!!!! Covariance matrix elements yy and xz are switched until a central fix is provided!!!!!
-    kfpVertex.SetCovarianceMatrix(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ());
-    kfpVertex.SetChi2(collision.chi2());
-    kfpVertex.SetNDF(2 * collision.multNTracksPV() - 3);
-    kfpVertex.SetNContributors(collision.multNTracksPV());
-
+    KFPVertex kfpVertex = CreateKFPVertexFromCollision(collision);
     KFParticle KFPV(kfpVertex);
 
     /// fill collision parameters
@@ -361,91 +336,60 @@ struct qaKFParticle {
       auto track1p = track1.p();
       auto track2p = track2.p();
 
-      o2::track::TrackParametrizationWithError trackparCovPi;
-      o2::track::TrackParametrizationWithError trackparCovKa;
+      /// Apply single track cuts as a prefilter on the daughter tracks.
+      /// Transverse momentum range
+      if (track1p < d_pTMin || track2p < d_pTMin) {
+        continue;
+      }
+      /// Eta range
+      if (abs(track1.eta()) > d_etaRange || abs(track2.eta()) > d_etaRange) {
+        continue;
+      }
+      /// DCA XY of the daughter tracks to the primaty vertex
+      if (track1.dcaXY() > d_dcaXYTrackPV || track2.dcaXY() > d_dcaXYTrackPV) {
+        continue;
+      }
+      /// DCA Z of the daughter tracks to the primaty vertex
+      if (track1.dcaZ() > d_dcaZTrackPV || track2.dcaZ() > d_dcaZTrackPV) {
+        continue;
+      }
+
+      KFPTrack kfpTrackPi;
+      KFPTrack kfpTrackKa;
 
       bool CandD0 = false;
       bool CandD0bar = false;
       /// At the moment pT independent TPC selection. Add a minimum and Maximum momentum
       /// Apply TPC+TOF at higher momenta (TOF still uncalibrated for LHC22f).
+
       /// Select D0 and D0bar candidates
       if (nSigmaTPCMinPi <= track1.tpcNSigmaPi() && track1.tpcNSigmaPi() <= nSigmaTPCMaxPi && nSigmaTPCMinKa <= track2.tpcNSigmaKa() && track2.tpcNSigmaPi() <= nSigmaTPCMaxKa) {
         if (track1.sign() == 1 && track2.sign() == -1) {
           CandD0 = true;
-          trackparCovPi = getTrackParCov(track1);
-          trackparCovKa = getTrackParCov(track2);
+          kfpTrackPi = CreateKFPTrackFromTrack(track1);
+          kfpTrackKa = CreateKFPTrackFromTrack(track2);
         } else if (track1.sign() == -1 && track2.sign() == 1) {
           CandD0bar = true;
-          trackparCovPi = getTrackParCov(track1);
-          trackparCovKa = getTrackParCov(track2);
+          kfpTrackPi = CreateKFPTrackFromTrack(track1);
+          kfpTrackKa = CreateKFPTrackFromTrack(track2);
         } else {
           continue;
         }
       } else if (nSigmaTPCMinKa <= track1.tpcNSigmaKa() && track1.tpcNSigmaKa() <= nSigmaTPCMaxKa && nSigmaTPCMinPi <= track2.tpcNSigmaPi() && track2.tpcNSigmaPi() <= nSigmaTPCMaxPi) {
         if (track1.sign() == 1 && track2.sign() == -1) {
           CandD0bar = true;
-          trackparCovPi = getTrackParCov(track2);
-          trackparCovKa = getTrackParCov(track1);
+          kfpTrackPi = CreateKFPTrackFromTrack(track2);
+          kfpTrackKa = CreateKFPTrackFromTrack(track1);
         } else if (track1.sign() == -1 && track2.sign() == 1) {
           CandD0 = true;
-          trackparCovPi = getTrackParCov(track2);
-          trackparCovKa = getTrackParCov(track1);
+          kfpTrackPi = CreateKFPTrackFromTrack(track2);
+          kfpTrackKa = CreateKFPTrackFromTrack(track1);
         } else {
           continue;
         }
       } else {
         continue;
       }
-
-      /// Apply single track cuts as a prefilter on the daughter tracks.
-      if (track1p < pTMin || abs(track1.eta()) > etaRange || track2p < pTMin || abs(track2.eta()) > etaRange) {
-        continue;
-      }
-
-      /// Keep in mind that in the track table the parameters are stored after propagation to the DCA to the PV.
-      /// Check if we need to get another table. Or where the parameters might have to be propagated.
-      array<float, 3> trkpos_parPi;
-      array<float, 3> trkpos_parKa;
-      array<float, 3> trkmom_parPi;
-      array<float, 3> trkmom_parKa;
-      array<float, 21> trk_covPi;
-      array<float, 21> trk_covKa;
-
-      trackparCovPi.getXYZGlo(trkpos_parPi);
-      trackparCovPi.getPxPyPzGlo(trkmom_parPi);
-      trackparCovPi.getCovXYZPxPyPzGlo(trk_covPi);
-      trackparCovKa.getXYZGlo(trkpos_parKa);
-      trackparCovKa.getPxPyPzGlo(trkmom_parKa);
-      trackparCovKa.getCovXYZPxPyPzGlo(trk_covKa);
-      float trkpar_KFPi[6] = {trkpos_parPi[0], trkpos_parPi[1], trkpos_parPi[2],
-                              trkmom_parPi[0], trkmom_parPi[1], trkmom_parPi[2]};
-      float trkpar_KFKa[6] = {trkpos_parKa[0], trkpos_parKa[1], trkpos_parKa[2],
-                              trkmom_parKa[0], trkmom_parKa[1], trkmom_parKa[2]};
-      float trkcov_KFPi[21];
-      float trkcov_KFKa[21];
-      for (int i = 0; i < 21; i++) {
-        trkcov_KFPi[i] = trk_covPi[i];
-        trkcov_KFKa[i] = trk_covKa[i];
-      }
-
-      KFPTrack kfpTrackPi;
-      KFPTrack kfpTrackKa;
-      kfpTrackPi.SetParameters(trkpar_KFPi);
-      kfpTrackPi.SetCovarianceMatrix(trkcov_KFPi);
-      kfpTrackKa.SetParameters(trkpar_KFKa);
-      kfpTrackKa.SetCovarianceMatrix(trkcov_KFKa);
-
-      if (CandD0) {
-        kfpTrackPi.SetCharge(1);
-        kfpTrackKa.SetCharge(-1);
-      } else if (CandD0bar) {
-        kfpTrackPi.SetCharge(-1);
-        kfpTrackKa.SetCharge(1);
-      }
-      /// Add these quantities!
-      kfpTrackPi.SetNDF(1); // Which is the correct number?
-      kfpTrackKa.SetNDF(1); // Which is the correct number?
-      // kfpTrack.SetChi2(...);
 
       KFParticle KFPion(kfpTrackPi, 211);
       KFParticle KFKaon(kfpTrackKa, 321);
@@ -477,9 +421,11 @@ struct qaKFParticle {
       KFDZero.SetConstructMethod(2);
       KFDZero.Construct(D0Daughters, NDaughters, &KFPV);
 
-      float X = 0., Y = 0., Z = 0., E = 0., Chi2 = 0., NDF = 0., P = 0., Pt = 0., Eta = 0., Phi = 0., mass = 0., decayLength = 0., decayLengthxy = 0., cosPA = -1., lifeTime = 0., massErr = 0., decayLengthErr = 0.;
+      float X = 0., Y = 0., Z = 0., E = 0., Chi2 = 0., NDF = 0., P = 0., Pt = 0., PtPi = 0., PtKa = 0., Eta = 0., Phi = 0., mass = 0., decayLength = 0., decayLengthxy = 0., cosPA = -1., lifeTime = 0., massErr = 0., decayLengthErr = 0., normdecayLength = 0.;
       bool atProductionVertex = false;
       float distToPV = 0., deviationToPV = 0., distToPVxy = 0., deviationToPVxy = 0.;
+      float deviationDaugtherTracks = 0., distanceDaugtherTracks = 0., distPiToSV = 0., deviationPiToSV = 0., distKaToSV = 0., deviationKaToSV = 0., distPiToPV = 0., distKaToPV = 0., d0pid0ka = 0.;
+      float cosThetaStarPion = 0., cosThetaStarKaon = 0., decaylengthPi = 0., decaylengthKa = 0.;
 
       KFParticle KFDZero_DecayVtx = KFDZero;
       KFDZero_DecayVtx.TransportToDecayVertex();
@@ -492,6 +438,8 @@ struct qaKFParticle {
       NDF = KFDZero.GetNDF();
       P = KFDZero.GetP();
       Pt = KFDZero.GetPt();
+      PtPi = KFPion.GetPt();
+      PtKa = KFKaon.GetPt();
       Eta = KFDZero.GetEta();
       Phi = KFDZero.GetPhi();
       mass = KFDZero.GetMass();
@@ -501,19 +449,38 @@ struct qaKFParticle {
       lifeTime = KFDZero.GetLifeTime();
       massErr = KFDZero.GetErrMass();
       decayLengthErr = KFDZero.GetErrDecayLength();
+      normdecayLength = decayLength / decayLengthErr;
       distToPV = KFDZero.GetDistanceFromVertex(KFPV);
       deviationToPV = KFDZero.GetDeviationFromVertex(KFPV);
       distToPVxy = KFDZero.GetDistanceFromVertexXY(KFPV);
       deviationToPVxy = KFDZero.GetDeviationFromVertexXY(KFPV);
       atProductionVertex = KFDZero.GetAtProductionVertex();
 
+      deviationDaugtherTracks = KFPion.GetDeviationFromParticle(KFKaon);
+      distanceDaugtherTracks = KFPion.GetDistanceFromParticle(KFKaon);
+      distPiToSV = KFPion.GetDistanceFromVertex(KFDZero_DecayVtx);
+      deviationPiToSV = KFPion.GetDeviationFromVertex(KFDZero_DecayVtx);
+      distKaToSV = KFKaon.GetDistanceFromVertex(KFDZero_DecayVtx);
+      deviationKaToSV = KFKaon.GetDeviationFromVertex(KFDZero_DecayVtx);
+      distPiToPV = KFPion.GetDistanceFromVertexXY(KFPV);
+      distKaToPV = KFKaon.GetDistanceFromVertexXY(KFPV);
+      d0pid0ka = distPiToPV*distKaToPV;
+
+      cosThetaStarPion = CosThetaStarFromKF(0, 421, 211, 321, KFPion, KFKaon, KFDZero);
+      cosThetaStarKaon = CosThetaStarFromKF(1, 421, 211, 321, KFPion, KFKaon, KFDZero);
+      decaylengthPi = KFPion.GetDecayLength();
+      decaylengthKa = KFKaon.GetDecayLength();
+
+      /// We need to get the position of the secondary vertex in a KFPVertex.
+      /// Then we can also calculate the impact parameters with the KF Utils and the product if impact parameters.
+
       /// Remove daughter tracks from PV fit?
       /// Pt selection
-      if (Pt < pTMinD0 || Pt > pTMaxD0) {
+      if (Pt < d_pTMinD0 || Pt > d_pTMaxD0) {
         continue;
       }
       /// Mass window selection
-      if (mass < massMinD0 || mass > massMaxD0) {
+      if (mass < d_massMinD0 || mass > d_massMaxD0) {
         continue;
       }
       /// cosine pointing anle selection
@@ -522,6 +489,50 @@ struct qaKFParticle {
       }
       /// decay length selection
       if (decayLength < d_decayLength) {
+        continue;
+      }
+      /// decay length error selection
+      if (normdecayLength < d_normdecayLength) {
+        continue;
+      }
+      /// chi2 topological of DZero to PV
+      if (deviationToPV > d_chi2topoD0) {
+        continue;
+      }
+      /// chi2 3D daughter tracks at the secondary vertex
+      if (deviationDaugtherTracks > d_chi23DSVDau) {
+        continue;
+      }
+      /// distance 3D daughter tracks at the secondary vertex
+      if (distanceDaugtherTracks > d_dist3DSVDau) {
+        continue;
+      }
+      /// cosine theta star of the pion from D0
+      if (cosThetaStarPion > d_cosThetaStarPi) {
+        continue;
+      }
+      /// cosine theta star of the kaon from D0
+      if (cosThetaStarKaon > d_cosThetaStarKa) {
+        continue;
+      }
+      /// deviation Pi to SV
+      if (deviationPiToSV > d_deviationPiToSV) {
+        continue;
+      }
+      /// distance Pi to SV
+      if (distPiToSV > d_distPiToSV) {
+        continue;
+      }
+      /// deviation Ka to SV
+      if (deviationKaToSV > d_deviationKaToSV) {
+        continue;
+      }
+      /// distance Ka to SV
+      if (distKaToSV > d_distKaToSV) {
+        continue;
+      }
+      /// product impact parameters of daughters to the PV
+      if (d0pid0ka > d_d0pid0ka) {
         continue;
       }
 
@@ -550,12 +561,47 @@ struct qaKFParticle {
       histos.fill(HIST("DZeroCand/deviationToPV"), deviationToPV);
       histos.fill(HIST("DZeroCand/distToPVXY"), distToPVxy);
       histos.fill(HIST("DZeroCand/deviationToPVXY"), deviationToPVxy);
+      histos.fill(HIST("DZeroCand/deviationDaugtherTracks"), deviationDaugtherTracks);
+      histos.fill(HIST("DZeroCand/distanceDaugtherTracks"), distanceDaugtherTracks);
+      histos.fill(HIST("DZeroCand/cosThetaStarPion"), cosThetaStarPion);
+      histos.fill(HIST("DZeroCand/cosThetaStarKaon"), cosThetaStarKaon);
+      histos.fill(HIST("DZeroCand/deviationPiToSV"), deviationPiToSV);
+      histos.fill(HIST("DZeroCand/distPiToSV"), distPiToSV);
+      histos.fill(HIST("DZeroCand/deviationKaToSV"), deviationKaToSV);
+      histos.fill(HIST("DZeroCand/distKaToSV"), distKaToSV);
+      histos.fill(HIST("DZeroCand/d0pid0ka"), d0pid0ka);
 
-      //   /// Add the secondary vertex and quantities of daughter particles
-      //   // float distToPVPi=0., distToPVKa=0. dcaBetweenTracks=0.;
-      //   // distToPVPi = KFPion.GetDistanceFromVertex(KFPV);
-      //   // distToPVKa = KFKaon.GetDistanceFromVertex(KFPV);
-      //   // dcaBetweenTracks = KFPion.GetDistanceFromParticle(KFKaon);
+      /// Filling the D0 tree
+      rowDZeroTree(PtPi,
+      PtKa,
+      track1.tpcNSigmaPi(),
+      track2.tpcNSigmaPi(),
+      track1.tpcNSigmaKa(),
+      track2.tpcNSigmaKa(),
+      decaylengthPi,
+      decaylengthKa,
+      Pt,
+      mass,
+      decayLength,
+      decayLengthxy,
+      cosPA,
+      lifeTime,
+      normdecayLength,
+      distToPV,
+      deviationToPV,
+      distToPVxy,
+      deviationToPVxy,
+      deviationDaugtherTracks,
+      distanceDaugtherTracks,
+      distPiToSV,
+      deviationPiToSV,
+      distKaToSV,
+      deviationKaToSV,
+      distPiToPV,
+      distKaToPV,
+      d0pid0ka,
+      cosThetaStarPion,
+      cosThetaStarKaon);
     }
   }
   PROCESS_SWITCH(qaKFParticle, processData, "process data", true);
