@@ -21,10 +21,8 @@ namespace kfparticle
 {
 DECLARE_SOA_COLUMN(PtPi, ptpi, float);
 DECLARE_SOA_COLUMN(PtKa, ptka, float);
-DECLARE_SOA_COLUMN(TPCNSigmaPiTr1, tpcnsigmapitr1, float);
-DECLARE_SOA_COLUMN(TPCNSigmaKaTr1, tpcnsigmakatr1, float);
-DECLARE_SOA_COLUMN(TPCNSigmaPiTr2, tpcnsigmapitr2, float);
-DECLARE_SOA_COLUMN(TPCNSigmaKaTr2, tpcnsigmakatr2, float);
+DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcnsigmapi, float);
+DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcnsigmaka, float);
 DECLARE_SOA_COLUMN(DecayLengthPi, decaylengthpi, float);
 DECLARE_SOA_COLUMN(DecayLengthKa, decaylengthka, float);
 DECLARE_SOA_COLUMN(PtD, ptd, float);
@@ -35,20 +33,17 @@ DECLARE_SOA_COLUMN(CosPa, cospa, float);
 DECLARE_SOA_COLUMN(Lifetime, lifetime, float);
 DECLARE_SOA_COLUMN(NormDecayLength, normdecaylength, float);
 DECLARE_SOA_COLUMN(DistDPV, distdpv, float);
-DECLARE_SOA_COLUMN(DeviationDPV, deviationdpv, float);
 DECLARE_SOA_COLUMN(DistDPVXY, distdpvxy, float);
-DECLARE_SOA_COLUMN(DeviationDPVXY, deviationdpvxy, float);
-DECLARE_SOA_COLUMN(DeviationDau, deviationdau, float);
 DECLARE_SOA_COLUMN(DistDau, distdau, float);
 DECLARE_SOA_COLUMN(DistPiSV, distpisv, float);
-DECLARE_SOA_COLUMN(DeviationPiSV, deviationpisv, float);
 DECLARE_SOA_COLUMN(DistKaSV, distkasv, float);
-DECLARE_SOA_COLUMN(DeviationKaSV, deviationkasv, float);
 DECLARE_SOA_COLUMN(DistPiPV, distpipv, float);
 DECLARE_SOA_COLUMN(DistKaPV, distkapv, float);
 DECLARE_SOA_COLUMN(D0PiD0Ka, d0pid0ka, float);
 DECLARE_SOA_COLUMN(CosThetaStartPi, costhetastarpi, float);
 DECLARE_SOA_COLUMN(CosThetaStartKa, costhetastarka, float);
+DECLARE_SOA_COLUMN(Chi2Geo, chi2geo, float);
+DECLARE_SOA_COLUMN(Chi2Topo, chi2topo, float);
 
 
 
@@ -57,10 +52,8 @@ DECLARE_SOA_COLUMN(CosThetaStartKa, costhetastarka, float);
 DECLARE_SOA_TABLE(TreeDZeroKF, "AOD", "TREEDZEROKF",
                   kfparticle::PtPi,
                   kfparticle::PtKa,
-                  kfparticle::TPCNSigmaPiTr1,
-                  kfparticle::TPCNSigmaPiTr2,
-                  kfparticle::TPCNSigmaKaTr1,
-                  kfparticle::TPCNSigmaKaTr2,
+                  kfparticle::TPCNSigmaPi,
+                  kfparticle::TPCNSigmaKa,
                   kfparticle::DecayLengthPi,
                   kfparticle::DecayLengthKa,
                   kfparticle::PtD,
@@ -71,19 +64,16 @@ DECLARE_SOA_TABLE(TreeDZeroKF, "AOD", "TREEDZEROKF",
                   kfparticle::Lifetime,
                   kfparticle::NormDecayLength,
                   kfparticle::DistDPV,
-                  kfparticle::DeviationDPV,
                   kfparticle::DistDPVXY,
-                  kfparticle::DeviationDPVXY,
-                  kfparticle::DeviationDau,
                   kfparticle::DistDau,
                   kfparticle::DistPiSV,
-                  kfparticle::DeviationPiSV,
                   kfparticle::DistKaSV,
-                  kfparticle::DeviationKaSV,
                   kfparticle::DistPiPV,
                   kfparticle::DistKaPV,
                   kfparticle::D0PiD0Ka,
                   kfparticle::CosThetaStartPi,
-                  kfparticle::CosThetaStartKa);
+                  kfparticle::CosThetaStartKa,
+                  kfparticle::Chi2Geo,
+                  kfparticle::Chi2Topo);
 
 } // namespace o2::aod

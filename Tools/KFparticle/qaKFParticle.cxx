@@ -98,13 +98,10 @@ struct qaKFParticle {
   Configurable<float> d_decayLength{"d_decayLength", 0., "minimum decay length for D0"};
   Configurable<float> d_normdecayLength{"d_normdecayLength", 100., "minimum normalised decay length for D0"};
   Configurable<float> d_chi2topoD0{"d_chi2topoD0", 1000., "maximum chi2 topological of D0 to PV"};
-  Configurable<float> d_chi23DSVDau{"d_chi23DSVDau", 1000., "maximum chi2 geometrical 3D daughter tracks at the SV"};
   Configurable<float> d_dist3DSVDau{"d_dist3DSVDau", 1000., "maximum geometrical distance 3D daughter tracks at the SV"};
   Configurable<float> d_cosThetaStarPi{"d_cosThetaStarPi", 1000., "maximum cosine theta star of the pion from D0"};
   Configurable<float> d_cosThetaStarKa{"d_cosThetaStarKa", 1000., "maximum cosine theta star of the kaon from D0"};
-  Configurable<float> d_deviationPiToSV{"d_deviationPiToSV", 1000., "maximum deviation Pi to SV"};
   Configurable<float> d_distPiToSV{"d_distPiToSV", 1000., "maximum distance Pi to SV"};
-  Configurable<float> d_deviationKaToSV{"d_deviationKaToSV", 1000., "maximum deviation Ka to SV"};
   Configurable<float> d_distKaToSV{"d_distKaToSV", 1000., "maximum distance Ka to SV"};
   Configurable<float> d_d0pid0ka{"d_d0pid0ka", -100000., "maximum product of impact parameters of daughters to the PV"};
   /// Option to write D0 variables in a tree
@@ -244,38 +241,63 @@ struct qaKFParticle {
     // Add nsigma TPC
 
     /// D0 candidates
-    histos.add("DZeroCand/atProductionVertex", "at production vertex;", kTH1D, {{2, 0, 1}});
-    histos.add("DZeroCand/X", "X [cm]", kTH1D, {axisParX});
-    histos.add("DZeroCand/Y", "Y [cm]", kTH1D, {axisParY});
-    histos.add("DZeroCand/Z", "Z [cm]", kTH1D, {axisParZ});
-    histos.add("DZeroCand/E", "E", kTH1D, {{100, 0., 50.}});
-    histos.add("DZeroCand/Chi2", "Chi2", kTH1D, {{100, 0., 100.}});
-    histos.add("DZeroCand/NDF", "NDF", kTH1D, {{100, 0., 100.}});
-    histos.add("DZeroCand/p", "momentum", kTH1D, {axisParPX});
-    histos.add("DZeroCand/pt", "transverse momentum", kTH1D, {axisParPX});
-    histos.add("DZeroCand/eta", "eta", kTH1D, {{100, -2., 2.}});
-    histos.add("DZeroCand/phi", "phi", kTH1D, {{100, 0., 3.6}});
-    histos.add("DZeroCand/mass", "mass", kTH1D, {{430, 1.65, 2.08}});
-    histos.add("DZeroCand/massvspt", "mass vs pt", kTH2D, {{axisParPX}, {430, 1.65, 2.08}});
-    histos.add("DZeroCand/decayLength", "decay length [cm]", kTH1D, {{200, 0., 2.}});
-    histos.add("DZeroCand/decayLengthXY", "decay length in xy plane [cm]", kTH1D, {{200, 0., 2.}});
-    histos.add("DZeroCand/cosPA", "cosine of pointing angle", kTH1D, {{100, -1, 1.}});
-    histos.add("DZeroCand/lifetime", "life time", kTH1D, {{100, 0., 0.2}});
-    histos.add("DZeroCand/massErr", "error mass", kTH1D, {{100, 0., 0.1}});
-    histos.add("DZeroCand/decayLengthErr", "decay length error [cm]", kTH1D, {{200, 0., 0.2}});
-    histos.add("DZeroCand/distToPV", "distance to PV", kTH1D, {{100, 0., 1.}});
-    histos.add("DZeroCand/deviationToPV", "deviation to PV", kTH1D, {{200, 0., 20.}});
-    histos.add("DZeroCand/distToPVXY", "distance to PV in xy plane", kTH1D, {{100, 0., 1.}});
-    histos.add("DZeroCand/deviationToPVXY", "deviation to PV in xy plane", kTH1D, {{200, 0., 20.}});
-    histos.add("DZeroCand/deviationDaugtherTracks", "chi2 in 3D of daughter tracks at the SV", kTH1D, {{200, 0., 0.2}});
-    histos.add("DZeroCand/distanceDaugtherTracks", "distance in 3D of daughter tracks at the SV", kTH1D, {{100, 0., 1.}});
-    histos.add("DZeroCand/cosThetaStarPion", "cosine theta star of the pion from D0", kTH1D, {{100, -10., 10.}});
-    histos.add("DZeroCand/cosThetaStarKaon", "cosine theta star of the kaon from D0", kTH1D, {{100, -10., 10}});
-    histos.add("DZeroCand/deviationPiToSV", "deviation of Pi to SV", kTH1D, {{200, 0., 20.}});
-    histos.add("DZeroCand/distPiToSV", "distance of Pi to SV", kTH1D, {{100, 0., 1.}});
-    histos.add("DZeroCand/deviationKaToSV", "deviation of Ka to SV", kTH1D, {{200, 0., 20.}});
-    histos.add("DZeroCand/distKaToSV", "distance of Ka to SV", kTH1D, {{100, 0., 1.}});
-    histos.add("DZeroCand/d0pid0ka", "product of impact parameters of daughters to the PV", kTH1D, {{100, -0.01, 0.01}});
+    histos.add("DZeroCandGeo/X", "X [cm]", kTH1D, {axisParX});
+    histos.add("DZeroCandGeo/Y", "Y [cm]", kTH1D, {axisParY});
+    histos.add("DZeroCandGeo/Z", "Z [cm]", kTH1D, {axisParZ});
+    histos.add("DZeroCandGeo/E", "E", kTH1D, {{100, 0., 50.}});
+    histos.add("DZeroCandGeo/Chi2", "Chi2", kTH1D, {{100, 0., 100.}});
+    histos.add("DZeroCandGeo/NDF", "NDF", kTH1D, {{100, 0., 100.}});
+    histos.add("DZeroCandGeo/Chi2OverNDF", "NDF", kTH1D, {{100, 0., 100.}});
+    histos.add("DZeroCandGeo/p", "momentum", kTH1D, {axisParPX});
+    histos.add("DZeroCandGeo/pt", "transverse momentum", kTH1D, {axisParPX});
+    histos.add("DZeroCandGeo/eta", "eta", kTH1D, {{100, -2., 2.}});
+    histos.add("DZeroCandGeo/phi", "phi", kTH1D, {{100, 0., 3.6}});
+    histos.add("DZeroCandGeo/mass", "mass", kTH1D, {{430, 1.65, 2.08}});
+    histos.add("DZeroCandGeo/massvspt", "mass vs pt", kTH2D, {{axisParPX}, {430, 1.65, 2.08}});
+    histos.add("DZeroCandGeo/decayLength", "decay length [cm]", kTH1D, {{200, 0., 2.}});
+    histos.add("DZeroCandGeo/decayLengthXY", "decay length in xy plane [cm]", kTH1D, {{200, 0., 2.}});
+    histos.add("DZeroCandGeo/cosPA", "cosine of pointing angle", kTH1D, {{100, -1, 1.}});
+    histos.add("DZeroCandGeo/lifetime", "life time", kTH1D, {{100, 0., 0.2}});
+    histos.add("DZeroCandGeo/massErr", "error mass", kTH1D, {{100, 0., 0.1}});
+    histos.add("DZeroCandGeo/decayLengthErr", "decay length error [cm]", kTH1D, {{200, 0., 0.2}});
+    histos.add("DZeroCandGeo/distToPV", "distance to PV", kTH1D, {{100, 0., 1.}});
+    histos.add("DZeroCandGeo/deviationToPV", "deviation to PV", kTH1D, {{200, 0., 20.}});
+    histos.add("DZeroCandGeo/distToPVXY", "distance to PV in xy plane", kTH1D, {{100, 0., 1.}});
+    histos.add("DZeroCandGeo/deviationToPVXY", "deviation to PV in xy plane", kTH1D, {{200, 0., 20.}});
+
+
+    histos.add("DZeroCandTopo/X", "X [cm]", kTH1D, {axisParX});
+    histos.add("DZeroCandTopo/Y", "Y [cm]", kTH1D, {axisParY});
+    histos.add("DZeroCandTopo/Z", "Z [cm]", kTH1D, {axisParZ});
+    histos.add("DZeroCandTopo/E", "E", kTH1D, {{100, 0., 50.}});
+    histos.add("DZeroCandTopo/Chi2", "Chi2", kTH1D, {{100, 0., 100.}});
+    histos.add("DZeroCandTopo/NDF", "NDF", kTH1D, {{100, 0., 100.}});
+    histos.add("DZeroCandTopo/Chi2OverNDF", "NDF", kTH1D, {{100, 0., 100.}});
+    histos.add("DZeroCandTopo/p", "momentum", kTH1D, {axisParPX});
+    histos.add("DZeroCandTopo/pt", "transverse momentum", kTH1D, {axisParPX});
+    histos.add("DZeroCandTopo/eta", "eta", kTH1D, {{100, -2., 2.}});
+    histos.add("DZeroCandTopo/phi", "phi", kTH1D, {{100, 0., 3.6}});
+    histos.add("DZeroCandTopo/mass", "mass", kTH1D, {{430, 1.65, 2.08}});
+    histos.add("DZeroCandTopo/massvspt", "mass vs pt", kTH2D, {{axisParPX}, {430, 1.65, 2.08}});
+    histos.add("DZeroCandTopo/decayLength", "decay length [cm]", kTH1D, {{200, 0., 2.}});
+    histos.add("DZeroCandTopo/decayLengthXY", "decay length in xy plane [cm]", kTH1D, {{200, 0., 2.}});
+    histos.add("DZeroCandTopo/cosPA", "cosine of pointing angle", kTH1D, {{100, -1, 1.}});
+    histos.add("DZeroCandTopo/lifetime", "life time", kTH1D, {{100, 0., 0.2}});
+    histos.add("DZeroCandTopo/massErr", "error mass", kTH1D, {{100, 0., 0.1}});
+    histos.add("DZeroCandTopo/decayLengthErr", "decay length error [cm]", kTH1D, {{200, 0., 0.2}});
+    histos.add("DZeroCandTopo/distToPV", "distance to PV", kTH1D, {{100, 0., 1.}});
+    histos.add("DZeroCandTopo/deviationToPV", "deviation to PV", kTH1D, {{200, 0., 20.}});
+    histos.add("DZeroCandTopo/distToPVXY", "distance to PV in xy plane", kTH1D, {{100, 0., 1.}});
+    histos.add("DZeroCandTopo/deviationToPVXY", "deviation to PV in xy plane", kTH1D, {{200, 0., 20.}});
+    histos.add("DZeroCandTopo/deviationDaugtherTracks", "chi2 in 3D of daughter tracks at the SV", kTH1D, {{200, 0., 0.2}});
+    histos.add("DZeroCandTopo/distanceDaugtherTracks", "distance in 3D of daughter tracks at the SV", kTH1D, {{100, 0., 1.}});
+    histos.add("DZeroCandTopo/cosThetaStarPion", "cosine theta star of the pion from D0", kTH1D, {{100, -10., 10.}});
+    histos.add("DZeroCandTopo/cosThetaStarKaon", "cosine theta star of the kaon from D0", kTH1D, {{100, -10., 10}});
+    histos.add("DZeroCandTopo/deviationPiToSV", "deviation of Pi to SV", kTH1D, {{200, 0., 20.}});
+    histos.add("DZeroCandTopo/distPiToSV", "distance of Pi to SV", kTH1D, {{100, 0., 1.}});
+    histos.add("DZeroCandTopo/deviationKaToSV", "deviation of Ka to SV", kTH1D, {{200, 0., 20.}});
+    histos.add("DZeroCandTopo/distKaToSV", "distance of Ka to SV", kTH1D, {{100, 0., 1.}});
+    histos.add("DZeroCandTopo/d0pid0ka", "product of impact parameters of daughters to the PV", kTH1D, {{100, -0.01, 0.01}});
   }
 
   /// Function to select collisions
@@ -355,41 +377,57 @@ struct qaKFParticle {
       if (track1.dcaZ() > d_dcaZTrackPV || track2.dcaZ() > d_dcaZTrackPV) {
         continue;
       }
+      /// reject if the tracks have the same sign
+      if (track1.sign() == track2.sign()) {
+        continue;
+      }
+      
 
       KFPTrack kfpTrackPi;
       KFPTrack kfpTrackKa;
 
       bool CandD0 = false;
       bool CandD0bar = false;
+      float nsigmaPi = 0., nsigmaKa = 0.;
       /// At the moment pT independent TPC selection. Add a minimum and Maximum momentum
       /// Apply TPC+TOF at higher momenta (TOF still uncalibrated for LHC22f).
 
       /// Select D0 and D0bar candidates
-      if (nSigmaTPCMinPi <= track1.tpcNSigmaPi() && track1.tpcNSigmaPi() <= nSigmaTPCMaxPi && nSigmaTPCMinKa <= track2.tpcNSigmaKa() && track2.tpcNSigmaPi() <= nSigmaTPCMaxKa) {
+      if (nSigmaTPCMinPi <= track1.tpcNSigmaPi() && track1.tpcNSigmaPi() <= nSigmaTPCMaxPi && nSigmaTPCMinKa <= track2.tpcNSigmaKa() && track2.tpcNSigmaKa() <= nSigmaTPCMaxKa) {
         if (track1.sign() == 1 && track2.sign() == -1) {
           CandD0 = true;
           kfpTrackPi = CreateKFPTrackFromTrack(track1);
           kfpTrackKa = CreateKFPTrackFromTrack(track2);
+          nsigmaPi = track1.tpcNSigmaPi();
+          nsigmaKa = track2.tpcNSigmaKa();
         } else if (track1.sign() == -1 && track2.sign() == 1) {
           CandD0bar = true;
           kfpTrackPi = CreateKFPTrackFromTrack(track1);
           kfpTrackKa = CreateKFPTrackFromTrack(track2);
+          nsigmaPi = track1.tpcNSigmaPi();
+          nsigmaKa = track2.tpcNSigmaKa();
         } else {
           continue;
         }
-      } else if (nSigmaTPCMinKa <= track1.tpcNSigmaKa() && track1.tpcNSigmaKa() <= nSigmaTPCMaxKa && nSigmaTPCMinPi <= track2.tpcNSigmaPi() && track2.tpcNSigmaPi() <= nSigmaTPCMaxPi) {
+      } 
+      if (nSigmaTPCMinKa <= track1.tpcNSigmaKa() && track1.tpcNSigmaKa() <= nSigmaTPCMaxKa && nSigmaTPCMinPi <= track2.tpcNSigmaPi() && track2.tpcNSigmaPi() <= nSigmaTPCMaxPi) {
         if (track1.sign() == 1 && track2.sign() == -1) {
           CandD0bar = true;
           kfpTrackPi = CreateKFPTrackFromTrack(track2);
           kfpTrackKa = CreateKFPTrackFromTrack(track1);
+          nsigmaPi = track2.tpcNSigmaPi();
+          nsigmaKa = track1.tpcNSigmaKa();
         } else if (track1.sign() == -1 && track2.sign() == 1) {
           CandD0 = true;
           kfpTrackPi = CreateKFPTrackFromTrack(track2);
           kfpTrackKa = CreateKFPTrackFromTrack(track1);
+          nsigmaPi = track2.tpcNSigmaPi();
+          nsigmaKa = track1.tpcNSigmaKa();
         } else {
           continue;
         }
-      } else {
+      } 
+      if (!CandD0 && !CandD0bar) {
         continue;
       }
 
@@ -421,42 +459,50 @@ struct qaKFParticle {
       const KFParticle* D0Daughters[2] = {&KFPion, &KFKaon};
       int NDaughters = 2;
       KFDZero.SetConstructMethod(2);
-      KFDZero.Construct(D0Daughters, NDaughters, &KFPV);
+      KFDZero.Construct(D0Daughters, NDaughters);
 
       float X = 0., Y = 0., Z = 0., E = 0., Chi2 = 0., NDF = 0., P = 0., Pt = 0., PtPi = 0., PtKa = 0., Eta = 0., Phi = 0., mass = 0., decayLength = 0., decayLengthxy = 0., cosPA = -1., lifeTime = 0., massErr = 0., decayLengthErr = 0., normdecayLength = 0.;
-      bool atProductionVertex = false;
       float distToPV = 0., deviationToPV = 0., distToPVxy = 0., deviationToPVxy = 0.;
       float deviationDaugtherTracks = 0., distanceDaugtherTracks = 0., distPiToSV = 0., deviationPiToSV = 0., distKaToSV = 0., deviationKaToSV = 0., distPiToPV = 0., distKaToPV = 0., d0pid0ka = 0.;
       float cosThetaStarPion = 0., cosThetaStarKaon = 0., decaylengthPi = 0., decaylengthKa = 0.;
+      float chi2topo = 0.;
 
-      KFParticle KFDZero_DecayVtx = KFDZero;
+      float XGeo = 0., YGeo = 0., ZGeo = 0., EGeo = 0., Chi2Geo = 0., NDFGeo = 0., PGeo = 0., PtGeo = 0., EtaGeo = 0., PhiGeo = 0., massGeo = 0., decayLengthGeo = 0., decayLengthxyGeo = 0., lifeTimeGeo = 0., massErrGeo = 0., decayLengthErrGeo = 0., normdecayLengthGeo = 0.;
+      float distToPVGeo = 0., deviationToPVGeo = 0., distToPVxyGeo = 0., deviationToPVxyGeo = 0.;
+      float chi2geo = 0.;
+
+      KFParticle KFDZero_PV = KFDZero;
+      KFDZero_PV.SetProductionVertex(KFPV);
+
+      KFParticle KFDZero_DecayVtx = KFDZero_PV;
       KFDZero_DecayVtx.TransportToDecayVertex();
 
-      X = KFDZero.GetX();
-      Y = KFDZero.GetY();
-      Z = KFDZero.GetZ();
-      E = KFDZero.GetE();
-      Chi2 = KFDZero.GetChi2();
-      NDF = KFDZero.GetNDF();
-      P = KFDZero.GetP();
-      Pt = KFDZero.GetPt();
+
+      X = KFDZero_PV.GetX();
+      Y = KFDZero_PV.GetY();
+      Z = KFDZero_PV.GetZ();
+      E = KFDZero_PV.GetE();
+      Chi2 = KFDZero_PV.GetChi2();
+      NDF = KFDZero_PV.GetNDF();
+      P = KFDZero_PV.GetP();
+      Pt = KFDZero_PV.GetPt();
       PtPi = KFPion.GetPt();
       PtKa = KFKaon.GetPt();
-      Eta = KFDZero.GetEta();
-      Phi = KFDZero.GetPhi();
-      mass = KFDZero.GetMass();
-      decayLength = KFDZero.GetDecayLength();
-      decayLengthxy = KFDZero.GetDecayLengthXY();
+      Eta = KFDZero_PV.GetEta();
+      Phi = KFDZero_PV.GetPhi();
+      mass = KFDZero_PV.GetMass();
+      decayLength = KFDZero_PV.GetDecayLength();
+      decayLengthxy = KFDZero_PV.GetDecayLengthXY();
       cosPA = CosPointingAngleFromKF(KFDZero_DecayVtx, KFPV);
-      lifeTime = KFDZero.GetLifeTime();
-      massErr = KFDZero.GetErrMass();
-      decayLengthErr = KFDZero.GetErrDecayLength();
+      lifeTime = KFDZero_PV.GetLifeTime();
+      massErr = KFDZero_PV.GetErrMass();
+      decayLengthErr = KFDZero_PV.GetErrDecayLength();
       normdecayLength = decayLength / decayLengthErr;
-      distToPV = KFDZero.GetDistanceFromVertex(KFPV);
-      deviationToPV = KFDZero.GetDeviationFromVertex(KFPV);
-      distToPVxy = KFDZero.GetDistanceFromVertexXY(KFPV);
-      deviationToPVxy = KFDZero.GetDeviationFromVertexXY(KFPV);
-      atProductionVertex = KFDZero.GetAtProductionVertex();
+      distToPV = KFDZero_PV.GetDistanceFromVertex(KFPV);
+      deviationToPV = KFDZero_PV.GetDeviationFromVertex(KFPV);
+      distToPVxy = KFDZero_PV.GetDistanceFromVertexXY(KFPV);
+      deviationToPVxy = KFDZero_PV.GetDeviationFromVertexXY(KFPV);
+      chi2topo = KFDZero_PV.GetChi2()/KFDZero_PV.GetNDF();
 
       deviationDaugtherTracks = KFPion.GetDeviationFromParticle(KFKaon);
       distanceDaugtherTracks = KFPion.GetDistanceFromParticle(KFKaon);
@@ -468,10 +514,33 @@ struct qaKFParticle {
       distKaToPV = KFKaon.GetDistanceFromVertexXY(KFPV);
       d0pid0ka = distPiToPV*distKaToPV;
 
-      cosThetaStarPion = CosThetaStarFromKF(0, 421, 211, 321, KFPion, KFKaon, KFDZero);
-      cosThetaStarKaon = CosThetaStarFromKF(1, 421, 211, 321, KFPion, KFKaon, KFDZero);
+      cosThetaStarPion = CosThetaStarFromKF(0, 421, 211, 321, KFPion, KFKaon, KFDZero_PV);
+      cosThetaStarKaon = CosThetaStarFromKF(1, 421, 211, 321, KFPion, KFKaon, KFDZero_PV);
       decaylengthPi = KFPion.GetDecayLength();
       decaylengthKa = KFKaon.GetDecayLength();
+
+      XGeo = KFDZero.GetX();
+      YGeo = KFDZero.GetY();
+      ZGeo = KFDZero.GetZ();
+      EGeo = KFDZero.GetE();
+      Chi2Geo = KFDZero.GetChi2();
+      NDFGeo = KFDZero.GetNDF();
+      PGeo = KFDZero.GetP();
+      PtGeo = KFDZero.GetPt();
+      EtaGeo = KFDZero.GetEta();
+      PhiGeo = KFDZero.GetPhi();
+      massGeo = KFDZero.GetMass();
+      decayLengthGeo = KFDZero.GetDecayLength();
+      decayLengthxyGeo = KFDZero.GetDecayLengthXY();
+      lifeTimeGeo = KFDZero.GetLifeTime();
+      massErrGeo = KFDZero.GetErrMass();
+      decayLengthErrGeo = KFDZero.GetErrDecayLength();
+      normdecayLengthGeo = decayLengthGeo / decayLengthErrGeo;
+      distToPVGeo = KFDZero.GetDistanceFromVertex(KFPV);
+      deviationToPVGeo = KFDZero.GetDeviationFromVertex(KFPV);
+      distToPVxyGeo = KFDZero.GetDistanceFromVertexXY(KFPV);
+      deviationToPVxyGeo = KFDZero.GetDeviationFromVertexXY(KFPV);
+      chi2geo = KFDZero.GetChi2()/KFDZero.GetNDF();
 
       /// We need to get the position of the secondary vertex in a KFPVertex.
       /// Then we can also calculate the impact parameters with the KF Utils and the product if impact parameters.
@@ -485,7 +554,7 @@ struct qaKFParticle {
       if (mass < d_massMinD0 || mass > d_massMaxD0) {
         continue;
       }
-      /// cosine pointing anle selection
+      /// cosine pointing angle selection
       if (cosPA < d_cosPA) {
         continue;
       }
@@ -498,11 +567,7 @@ struct qaKFParticle {
         continue;
       }
       /// chi2 topological of DZero to PV
-      if (deviationToPV > d_chi2topoD0) {
-        continue;
-      }
-      /// chi2 3D daughter tracks at the secondary vertex
-      if (deviationDaugtherTracks > d_chi23DSVDau) {
+      if (chi2topo > d_chi2topoD0) {
         continue;
       }
       /// distance 3D daughter tracks at the secondary vertex
@@ -517,16 +582,8 @@ struct qaKFParticle {
       if (cosThetaStarKaon > d_cosThetaStarKa) {
         continue;
       }
-      /// deviation Pi to SV
-      if (deviationPiToSV > d_deviationPiToSV) {
-        continue;
-      }
       /// distance Pi to SV
       if (distPiToSV > d_distPiToSV) {
-        continue;
-      }
-      /// deviation Ka to SV
-      if (deviationKaToSV > d_deviationKaToSV) {
         continue;
       }
       /// distance Ka to SV
@@ -538,49 +595,69 @@ struct qaKFParticle {
         continue;
       }
 
-      histos.fill(HIST("DZeroCand/atProductionVertex"), atProductionVertex);
-      histos.fill(HIST("DZeroCand/X"), X);
-      histos.fill(HIST("DZeroCand/Y"), Y);
-      histos.fill(HIST("DZeroCand/Z"), Z);
-      histos.fill(HIST("DZeroCand/E"), E);
-      histos.fill(HIST("DZeroCand/Chi2"), Chi2);
-      histos.fill(HIST("DZeroCand/NDF"), NDF);
-      histos.fill(HIST("DZeroCand/p"), P);
-      histos.fill(HIST("DZeroCand/pt"), Pt);
-      histos.fill(HIST("DZeroCand/eta"), Eta);
-      histos.fill(HIST("DZeroCand/phi"), Phi);
-      histos.fill(HIST("DZeroCand/mass"), mass);
-      histos.fill(HIST("DZeroCand/massvspt"), Pt, mass);
-      histos.fill(HIST("DZeroCand/decayLength"), decayLength);
-      histos.fill(HIST("DZeroCand/decayLengthXY"), decayLengthxy);
-      histos.fill(HIST("DZeroCand/cosPA"), cosPA);
-      histos.fill(HIST("DZeroCand/lifetime"), lifeTime);
-      histos.fill(HIST("DZeroCand/massErr"), massErr);
-      histos.fill(HIST("DZeroCand/massErr"), massErr);
-      histos.fill(HIST("DZeroCand/decayLengthErr"), decayLengthErr);
-      histos.fill(HIST("DZeroCand/decayLengthErr"), decayLengthErr);
-      histos.fill(HIST("DZeroCand/distToPV"), distToPV);
-      histos.fill(HIST("DZeroCand/deviationToPV"), deviationToPV);
-      histos.fill(HIST("DZeroCand/distToPVXY"), distToPVxy);
-      histos.fill(HIST("DZeroCand/deviationToPVXY"), deviationToPVxy);
-      histos.fill(HIST("DZeroCand/deviationDaugtherTracks"), deviationDaugtherTracks);
-      histos.fill(HIST("DZeroCand/distanceDaugtherTracks"), distanceDaugtherTracks);
-      histos.fill(HIST("DZeroCand/cosThetaStarPion"), cosThetaStarPion);
-      histos.fill(HIST("DZeroCand/cosThetaStarKaon"), cosThetaStarKaon);
-      histos.fill(HIST("DZeroCand/deviationPiToSV"), deviationPiToSV);
-      histos.fill(HIST("DZeroCand/distPiToSV"), distPiToSV);
-      histos.fill(HIST("DZeroCand/deviationKaToSV"), deviationKaToSV);
-      histos.fill(HIST("DZeroCand/distKaToSV"), distKaToSV);
-      histos.fill(HIST("DZeroCand/d0pid0ka"), d0pid0ka);
+      histos.fill(HIST("DZeroCandTopo/X"), X);
+      histos.fill(HIST("DZeroCandTopo/Y"), Y);
+      histos.fill(HIST("DZeroCandTopo/Z"), Z);
+      histos.fill(HIST("DZeroCandTopo/E"), E);
+      histos.fill(HIST("DZeroCandTopo/Chi2"), Chi2);
+      histos.fill(HIST("DZeroCandTopo/NDF"), NDF);
+      histos.fill(HIST("DZeroCandTopo/Chi2OverNDF"), chi2topo);
+      histos.fill(HIST("DZeroCandTopo/p"), P);
+      histos.fill(HIST("DZeroCandTopo/pt"), Pt);
+      histos.fill(HIST("DZeroCandTopo/eta"), Eta);
+      histos.fill(HIST("DZeroCandTopo/phi"), Phi);
+      histos.fill(HIST("DZeroCandTopo/mass"), mass);
+      histos.fill(HIST("DZeroCandTopo/massvspt"), Pt, mass);
+      histos.fill(HIST("DZeroCandTopo/decayLength"), decayLength);
+      histos.fill(HIST("DZeroCandTopo/decayLengthXY"), decayLengthxy);
+      histos.fill(HIST("DZeroCandTopo/cosPA"), cosPA);
+      histos.fill(HIST("DZeroCandTopo/lifetime"), lifeTime);
+      histos.fill(HIST("DZeroCandTopo/massErr"), massErr);
+      histos.fill(HIST("DZeroCandTopo/decayLengthErr"), decayLengthErr);
+      histos.fill(HIST("DZeroCandTopo/distToPV"), distToPV);
+      histos.fill(HIST("DZeroCandTopo/deviationToPV"), deviationToPV);
+      histos.fill(HIST("DZeroCandTopo/distToPVXY"), distToPVxy);
+      histos.fill(HIST("DZeroCandTopo/deviationToPVXY"), deviationToPVxy);
+      histos.fill(HIST("DZeroCandTopo/deviationDaugtherTracks"), deviationDaugtherTracks);
+      histos.fill(HIST("DZeroCandTopo/distanceDaugtherTracks"), distanceDaugtherTracks);
+      histos.fill(HIST("DZeroCandTopo/cosThetaStarPion"), cosThetaStarPion);
+      histos.fill(HIST("DZeroCandTopo/cosThetaStarKaon"), cosThetaStarKaon);
+      histos.fill(HIST("DZeroCandTopo/deviationPiToSV"), deviationPiToSV);
+      histos.fill(HIST("DZeroCandTopo/distPiToSV"), distPiToSV);
+      histos.fill(HIST("DZeroCandTopo/deviationKaToSV"), deviationKaToSV);
+      histos.fill(HIST("DZeroCandTopo/distKaToSV"), distKaToSV);
+      histos.fill(HIST("DZeroCandTopo/d0pid0ka"), d0pid0ka);
+
+
+      histos.fill(HIST("DZeroCandGeo/X"), XGeo);
+      histos.fill(HIST("DZeroCandGeo/Y"), YGeo);
+      histos.fill(HIST("DZeroCandGeo/Z"), ZGeo);
+      histos.fill(HIST("DZeroCandGeo/E"), EGeo);
+      histos.fill(HIST("DZeroCandGeo/Chi2"), Chi2Geo);
+      histos.fill(HIST("DZeroCandGeo/NDF"), NDFGeo);
+      histos.fill(HIST("DZeroCandGeo/Chi2OverNDF"), chi2geo);
+      histos.fill(HIST("DZeroCandGeo/p"), PGeo);
+      histos.fill(HIST("DZeroCandGeo/pt"), PtGeo);
+      histos.fill(HIST("DZeroCandGeo/eta"), EtaGeo);
+      histos.fill(HIST("DZeroCandGeo/phi"), PhiGeo);
+      histos.fill(HIST("DZeroCandGeo/mass"), massGeo);
+      histos.fill(HIST("DZeroCandGeo/massvspt"), PtGeo, massGeo);
+      histos.fill(HIST("DZeroCandGeo/decayLength"), decayLengthGeo);
+      histos.fill(HIST("DZeroCandGeo/decayLengthXY"), decayLengthxyGeo);
+      histos.fill(HIST("DZeroCandGeo/lifetime"), lifeTimeGeo);
+      histos.fill(HIST("DZeroCandGeo/massErr"), massErrGeo);
+      histos.fill(HIST("DZeroCandGeo/decayLengthErr"), decayLengthErrGeo);
+      histos.fill(HIST("DZeroCandGeo/distToPV"), distToPVGeo);
+      histos.fill(HIST("DZeroCandGeo/deviationToPV"), deviationToPVGeo);
+      histos.fill(HIST("DZeroCandGeo/distToPVXY"), distToPVxyGeo);
+      histos.fill(HIST("DZeroCandGeo/deviationToPVXY"), deviationToPVxyGeo);
 
       if(writeTree) {
         /// Filling the D0 tree
         rowDZeroTree(PtPi,
         PtKa,
-        track1.tpcNSigmaPi(),
-        track2.tpcNSigmaPi(),
-        track1.tpcNSigmaKa(),
-        track2.tpcNSigmaKa(),
+        nsigmaPi,
+        nsigmaKa,
         decaylengthPi,
         decaylengthKa,
         Pt,
@@ -591,20 +668,17 @@ struct qaKFParticle {
         lifeTime,
         normdecayLength,
         distToPV,
-        deviationToPV,
         distToPVxy,
-        deviationToPVxy,
-        deviationDaugtherTracks,
         distanceDaugtherTracks,
         distPiToSV,
-        deviationPiToSV,
         distKaToSV,
-        deviationKaToSV,
         distPiToPV,
         distKaToPV,
         d0pid0ka,
         cosThetaStarPion,
-        cosThetaStarKaon);
+        cosThetaStarKaon,
+        chi2geo,
+        chi2topo);
       }
 
     }
