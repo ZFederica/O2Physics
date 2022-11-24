@@ -65,7 +65,7 @@ KFPTrack kfpTrack;
 kfpTrack.SetParameters(trkpar_KF);
 kfpTrack.SetCovarianceMatrix(trkcov_KF);
 kfpTrack.SetCharge(track.sign());
-kfpTrack.SetNDF(track.tpcNClsFound()); // Which is the correct number?
+kfpTrack.SetNDF(track.tpcNClsFound()-5); // Which is the correct number?
 kfpTrack.SetChi2(track.tpcChi2NCl()*track.tpcNClsFound()); // Missing in the AO2Ds
 
 
