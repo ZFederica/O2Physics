@@ -44,6 +44,14 @@ DECLARE_SOA_COLUMN(CosThetaStartPi, costhetastarpi, float);
 DECLARE_SOA_COLUMN(CosThetaStartKa, costhetastarka, float);
 DECLARE_SOA_COLUMN(Chi2Geo, chi2geo, float);
 DECLARE_SOA_COLUMN(Chi2Topo, chi2topo, float);
+DECLARE_SOA_COLUMN(DeviationDToPV, deviationdtopv, float);
+DECLARE_SOA_COLUMN(DeviationDToPVXY, deviationdtopvxy, float);
+DECLARE_SOA_COLUMN(DeviationDau, deviationdau, float);
+DECLARE_SOA_COLUMN(DeviationPiSV, deviationpisv, float);
+DECLARE_SOA_COLUMN(DeviationKaSV, deviationkasv, float);
+DECLARE_SOA_COLUMN(DeviationPiPV, deviationpipv, float);
+DECLARE_SOA_COLUMN(DeviationKaPV, deviationkapv, float);
+
 
 
 
@@ -74,6 +82,13 @@ DECLARE_SOA_TABLE(TreeDZeroKF, "AOD", "TREEDZEROKF",
                   kfparticle::CosThetaStartPi,
                   kfparticle::CosThetaStartKa,
                   kfparticle::Chi2Geo,
-                  kfparticle::Chi2Topo);
+                  kfparticle::Chi2Topo,
+                  kfparticle::DeviationDToPV,
+                  kfparticle::DeviationDToPVXY,
+                  kfparticle::DeviationDau,
+                  kfparticle::DeviationPiSV,
+                  kfparticle::DeviationKaSV,
+                  kfparticle::DeviationPiPV,
+                  kfparticle::DeviationKaPV);
 
 } // namespace o2::aod

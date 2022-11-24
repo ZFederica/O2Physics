@@ -463,7 +463,7 @@ struct qaKFParticle {
 
       float X = 0., Y = 0., Z = 0., E = 0., Chi2 = 0., NDF = 0., P = 0., Pt = 0., PtPi = 0., PtKa = 0., Eta = 0., Phi = 0., mass = 0., decayLength = 0., decayLengthxy = 0., cosPA = -1., lifeTime = 0., massErr = 0., decayLengthErr = 0., normdecayLength = 0.;
       float distToPV = 0., deviationToPV = 0., distToPVxy = 0., deviationToPVxy = 0.;
-      float deviationDaugtherTracks = 0., distanceDaugtherTracks = 0., distPiToSV = 0., deviationPiToSV = 0., distKaToSV = 0., deviationKaToSV = 0., distPiToPV = 0., distKaToPV = 0., d0pid0ka = 0.;
+      float deviationDaugtherTracks = 0., distanceDaugtherTracks = 0., distPiToSV = 0., deviationPiToSV = 0., distKaToSV = 0., deviationKaToSV = 0., distPiToPV = 0., distKaToPV = 0., d0pid0ka = 0., deviationPiToPV = 0., deviationKaToPV = 0.;
       float cosThetaStarPion = 0., cosThetaStarKaon = 0., decaylengthPi = 0., decaylengthKa = 0.;
       float chi2topo = 0.;
 
@@ -508,6 +508,8 @@ struct qaKFParticle {
       distanceDaugtherTracks = KFPion.GetDistanceFromParticle(KFKaon);
       distPiToSV = KFPion.GetDistanceFromVertex(KFDZero_DecayVtx);
       deviationPiToSV = KFPion.GetDeviationFromVertex(KFDZero_DecayVtx);
+      deviationPiToPV = KFPion.GetDeviationFromVertex(KFPV);
+      deviationKaToPV = KFKaon.GetDeviationFromVertex(KFPV);
       distKaToSV = KFKaon.GetDistanceFromVertex(KFDZero_DecayVtx);
       deviationKaToSV = KFKaon.GetDeviationFromVertex(KFDZero_DecayVtx);
       distPiToPV = KFPion.GetDistanceFromVertexXY(KFPV);
@@ -678,7 +680,14 @@ struct qaKFParticle {
         cosThetaStarPion,
         cosThetaStarKaon,
         chi2geo,
-        chi2topo);
+        chi2topo,
+        deviationToPV,
+        deviationToPVxy,
+        deviationDaugtherTracks,
+        deviationPiToSV,
+        deviationKaToSV,
+        deviationPiToPV,
+        deviationKaToPV);
       }
 
     }
