@@ -1198,9 +1198,24 @@ DECLARE_SOA_COLUMN(YDecayVtxV0, yDecayVtxV0, float);
 DECLARE_SOA_COLUMN(ZDecayVtxV0, zDecayVtxV0, float);
 DECLARE_SOA_COLUMN(SignDecay, signDecay, int); //sign of pi <- xi
 DECLARE_SOA_COLUMN(Chi2PCAOmegac, chi2PcaOmegac, float);
-DECLARE_SOA_COLUMN(CovVtxOmegac, covVtxOmegac, float[6]);
-DECLARE_SOA_COLUMN(CovVtxV0, covVtxV0, float[6]);
-DECLARE_SOA_COLUMN(CovVtxCasc, covVtxCasc, float[6]);
+DECLARE_SOA_COLUMN(CovVtxOmegac1, covVtxOmegac1, float);
+DECLARE_SOA_COLUMN(CovVtxOmegac2, covVtxOmegac2, float);
+DECLARE_SOA_COLUMN(CovVtxOmegac3, covVtxOmegac3, float);
+DECLARE_SOA_COLUMN(CovVtxOmegac4, covVtxOmegac4, float);
+DECLARE_SOA_COLUMN(CovVtxOmegac5, covVtxOmegac5, float);
+DECLARE_SOA_COLUMN(CovVtxOmegac6, covVtxOmegac6, float);
+DECLARE_SOA_COLUMN(CovVtxV01, covVtxV01, float);
+DECLARE_SOA_COLUMN(CovVtxV02, covVtxV02, float);
+DECLARE_SOA_COLUMN(CovVtxV03, covVtxV03, float);
+DECLARE_SOA_COLUMN(CovVtxV04, covVtxV04, float);
+DECLARE_SOA_COLUMN(CovVtxV05, covVtxV05, float);
+DECLARE_SOA_COLUMN(CovVtxV06, covVtxV06, float);
+DECLARE_SOA_COLUMN(CovVtxCasc1, covVtxCasc1, float);
+DECLARE_SOA_COLUMN(CovVtxCasc2, covVtxCasc2, float);
+DECLARE_SOA_COLUMN(CovVtxCasc3, covVtxCasc3, float);
+DECLARE_SOA_COLUMN(CovVtxCasc4, covVtxCasc4, float);
+DECLARE_SOA_COLUMN(CovVtxCasc5, covVtxCasc5, float);
+DECLARE_SOA_COLUMN(CovVtxCasc6, covVtxCasc6, float);
 DECLARE_SOA_COLUMN(PxOmegac, pxOmegac, float);
 DECLARE_SOA_COLUMN(PyOmegac, pyOmegac, float);
 DECLARE_SOA_COLUMN(PzOmegac, pzOmegac, float);
@@ -1283,7 +1298,10 @@ DECLARE_SOA_TABLE(HfCandOmegac, "AOD", "HFCANDOMEC",
                   hf_cand_omegac::XDecayVtxCascade, hf_cand_omegac::YDecayVtxCascade, hf_cand_omegac::ZDecayVtxCascade,
                   hf_cand_omegac::XDecayVtxV0, hf_cand_omegac::YDecayVtxV0, hf_cand_omegac::ZDecayVtxV0,
                   hf_cand_omegac::SignDecay, // charge pi<-cascade (neg -> omegac, pos -> antiomegac)
-                  hf_cand_omegac::Chi2PCAOmegac, hf_cand_omegac::CovVtxOmegac, hf_cand_omegac::CovVtxV0, hf_cand_omegac::CovVtxCasc,
+                  hf_cand_omegac::Chi2PCAOmegac, 
+                  hf_cand_omegac::CovVtxOmegac1, hf_cand_omegac::CovVtxOmegac2, hf_cand_omegac::CovVtxOmegac3, hf_cand_omegac::CovVtxOmegac4, hf_cand_omegac::CovVtxOmegac5, hf_cand_omegac::CovVtxOmegac6,
+                  hf_cand_omegac::CovVtxV01, hf_cand_omegac::CovVtxV02, hf_cand_omegac::CovVtxV03, hf_cand_omegac::CovVtxV04, hf_cand_omegac::CovVtxV05, hf_cand_omegac::CovVtxV06,
+                  hf_cand_omegac::CovVtxCasc1, hf_cand_omegac::CovVtxCasc2, hf_cand_omegac::CovVtxCasc3, hf_cand_omegac::CovVtxCasc4, hf_cand_omegac::CovVtxCasc5, hf_cand_omegac::CovVtxCasc6,
                   hf_cand_omegac::PxOmegac, hf_cand_omegac::PyOmegac, hf_cand_omegac::PzOmegac,
                   hf_cand_omegac::PxCasc, hf_cand_omegac::PyCasc, hf_cand_omegac::PzCasc,
                   hf_cand_omegac::PxPrimaryPi, hf_cand_omegac::PyPrimaryPi, hf_cand_omegac::PzPrimaryPi,
