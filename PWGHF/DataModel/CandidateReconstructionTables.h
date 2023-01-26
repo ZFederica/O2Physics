@@ -1302,7 +1302,6 @@ DECLARE_SOA_TABLE(HfCandOmegac, "AOD", "HFCANDOMEC",
                   hf_cand_omegac::CTauOmegac, hf_cand_omegac::CTauCascade, hf_cand_omegac::CTauV0,
                   hf_cand_omegac::EtaV0PosDau, hf_cand_omegac::EtaV0NegDau, hf_cand_omegac::EtaPiFromCasc, hf_cand_omegac::EtaPiFromOme,
                   hf_cand_omegac::EtaOmegac, hf_cand_omegac::EtaCascade, hf_cand_omegac::EtaV0,
-                  hf_cand_omegac::MyMassLambda, hf_cand_omegac::MassCascadeNotFixed, hf_cand_omegac::MassOmegacNotFixed,
                   hf_cand_omegac::DcaXYToPVPrimaryPi, hf_cand_omegac::DcaXYToPVV0Dau0, hf_cand_omegac::DcaXYToPVV0Dau1, hf_cand_omegac::DcaXYToPVCascDau,
                   hf_cand_omegac::DcaCascDau, hf_cand_omegac::DcaV0Dau, hf_cand_omegac::DcaOmegacDau, hf_track_index::HFflag);
 
