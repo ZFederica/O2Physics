@@ -120,7 +120,7 @@ struct phosCalibration {
     mHistManager.add("hHardClu", "Hard clu occupancy per module", HistType::kTH3F, {modAxis, cellXAxis, cellZAxis});
     mHistManager.add("hSpClu", "Spectra", HistType::kTH2F, {amplitudeAxisLarge, modAxis});
     mHistManager.add("hTimeEClu", "Time vs E vs DDL", HistType::kTH3F, {ddlAxis, amplitudeAxisLarge, timeAxis});
-    mHistManager.add("hTimeDdlCorr", "Time vs DDL", HistType::kTH2F, {ddlAxis, timeAxis});
+    mHistManager.add("hTimeDdlCorr", "Time vs DDL", HistType::kTH3F, {ddlAxis, timeAxis, bcAxis});
     mHistManager.add("hRemgg", "Real m_{#gamma#gamma}", HistType::kTH2F, {absIdAxis, mggAxis});
     mHistManager.add("hMimgg", "Mixed m_{#gamma#gamma}", HistType::kTH2F, {absIdAxis, mggAxis});
     mHistManager.add("hResum", "Real m_{#gamma#gamma}", HistType::kTH2F, {mggAxis, amplitudeAxisLarge});
@@ -161,6 +161,7 @@ struct phosCalibration {
       calibParams.reset(calib1);
       fCalib->Close();
       clusterizer->setCalibration(calibParams.get());
+      clusterizer->setL1phase(mL1);
       LOG(info) << "Read calibration";
     }
 
@@ -232,7 +233,9 @@ struct phosCalibration {
     // Set number of cells in last TrigRec
     if (phosCellTRs.size() > 0) {
       phosCellTRs.back().setNumberOfObjects(phosCells.size() - phosCellTRs.back().getFirstEntry());
-      mHistManager.fill(HIST("eventsAll"), 1.);
+      mHistManager.fill(HIST("eventsAll"), phosCellTRs.size());
+    } else {
+      return;
     }
 
     // Clusterize
@@ -275,17 +278,11 @@ struct phosCalibration {
         char relid[3];
         phos::Geometry::absToRelNumbering(absId, relid);
         int ddl = (relid[0] - 1) * 4 + (relid[1] - 1) / 16 - 2;
-        int al1 = (mL1 >> (ddl * 2)) & 3; // extract 2 bits corresponding to this ddl
-        al1 = tr.getBCData().toLong() % 4 - al1;
-        if (al1 < 0)
-          al1 += 4;
-        // remove correction with L1=0 done in Clusterizer and apply correct one
-        float tcorr = clu.getTime() + (tr.getBCData().toLong() % 4 - al1) * 25.e-9;
 
-        mHistManager.fill(HIST("hTimeEClu"), ddl, e, tcorr);
+        mHistManager.fill(HIST("hTimeEClu"), ddl, e, clu.getTime());
         mHistManager.fill(HIST("hSpClu"), e, mod);
         if (e > 0.5) {
-          mHistManager.fill(HIST("hTimeDdlCorr"), static_cast<float>(ddl), tcorr);
+          mHistManager.fill(HIST("hTimeDdlCorr"), static_cast<float>(ddl), clu.getTime(), tr.getBCData().toLong() % 4);
         }
 
         if (e > 0.5) {
@@ -321,6 +318,9 @@ struct phosCalibration {
     }
 
     // Make Real and Mixed
+    if (event.size() == 0) { // to avoid overflow at uint type event.size() - 1
+      return;
+    }
     for (size_t i = 0; i < event.size() - 1; i++) {
       int absId1 = event[i].getAbsId();
       int nMix = mMixedEvents; // Number of events to mix

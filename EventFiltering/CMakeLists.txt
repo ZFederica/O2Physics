@@ -30,6 +30,11 @@ o2physics_add_dpl_workflow(diffraction-filter
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(diffraction-bcfilter
+                           SOURCES PWGUD/diffractionBCFilter.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_header_only_library(HFFilterHelpers
                                   HEADERS PWGHF/HFFilterHelpers.h)
 
@@ -55,6 +60,11 @@ o2physics_add_dpl_workflow(cf-threebodyfemto-filter
 
 o2physics_add_dpl_workflow(je-filter
                            SOURCES PWGJE/jetFilter.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(fje-filter
+                           SOURCES PWGJE/fullJetFilter.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib
                            COMPONENT_NAME Analysis)
 
