@@ -82,7 +82,6 @@ struct HfCandidateCreatorOmegac {
   OutputObj<TH1F> hPtPrimaryPi{TH1F("hPtPrimaryPi", "p_T primary #pi;p_T (GeV/#it{c});entries", 500, 0, 20)};
   OutputObj<TH1F> hxVertexOmegac{TH1F("hxVertexOmegac", "x Omegac vertex;xVtx;entries", 500, -10, 10)};
   OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
-  OutputObj<TH1F> hMassOmegacNotFixed{TH1F("hMassOmegacNotFixed", "hMassOmegacNotFixed;invmass;entries", 500, 2.2, 3.1)};
 
   void init(InitContext const&)
   {
@@ -101,7 +100,9 @@ struct HfCandidateCreatorOmegac {
                aod::CascDataExt const& cascades,
                MyTracks const& tracks,
                aod::V0Datas const&,
-               aod::V0sLinked const&)
+               aod::V0sLinked const&,
+               aod::V0Covs const&,
+               aod::CascCovs const&)
   {
 
     // set the magnetic field from CCDB
@@ -120,30 +121,6 @@ struct HfCandidateCreatorOmegac {
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedPCA);
     df.setRefitWithMatCorr(refitWithMatCorr);
-
-    // 2-prong vertex fitter to build the cascade vertex
-    o2::vertexing::DCAFitterN<2> dfc;
-    dfc.setBz(magneticField);
-    dfc.setPropagateToPCA(propagateToPCA);
-    dfc.setMaxR(maxR);
-    dfc.setMaxDZIni(maxDZIni);
-    dfc.setMinParamChange(minParamChange);
-    dfc.setMinRelChi2Change(minRelChi2Change);
-    dfc.setUseAbsDCA(useAbsDCA);
-    dfc.setWeightedFinalPCA(useWeightedPCA);
-    dfc.setRefitWithMatCorr(refitWithMatCorr);
-
-    // 2-prong vertex fitter to build the V0 vertex
-    o2::vertexing::DCAFitterN<2> dfv;
-    dfv.setBz(magneticField);
-    dfv.setPropagateToPCA(propagateToPCA);
-    dfv.setMaxR(maxR);
-    dfv.setMaxDZIni(maxDZIni);
-    dfv.setMinParamChange(minParamChange);
-    dfv.setMinRelChi2Change(minRelChi2Change);
-    dfv.setUseAbsDCA(useAbsDCA);
-    dfv.setWeightedFinalPCA(useWeightedPCA);
-    dfv.setRefitWithMatCorr(refitWithMatCorr);
 
     double massPionFromPDG = RecoDecay::getMassPDG(kPiPlus);    // pdg code 211
     double massProtonFromPDG = RecoDecay::getMassPDG(kProton);  // pdg code 2212
@@ -184,41 +161,24 @@ struct HfCandidateCreatorOmegac {
         }
       }
 
-      //--------------------------reconstruct V0---------------------------
+      //--------------------------reconstruct V0 track---------------------------
       // pseudorapidity
       double pseudorapV0PosDau = trackV0Dau0.eta();
       double pseudorapV0NegDau = trackV0Dau1.eta();
 
-      // pion & p <- V0 track to be processed with DCAfitter
+      // pion & p <- V0 tracks
       auto trackParCovV0Dau0 = getTrackParCov(trackV0Dau0);
       auto trackParCovV0Dau1 = getTrackParCov(trackV0Dau1);
 
-      // info from LF table (not used in the task - for cross checks)
-      // std::array<float, 3> pvecV0LFTable = {v0Element.px(), v0Element.py(), v0Element.pz()}; // pvec stands for vector containing the 3-momentum components
-      // std::array<float, 3> vertexV0 = {v0Element.x(), v0Element.y(), v0Element.z()};
-
-      // reconstruct V0 with DCAFitter
-      int nVtxFromFitterV0 = dfv.process(trackParCovV0Dau0, trackParCovV0Dau1);
-      if (nVtxFromFitterV0 == 0) {
-        continue;
-      }
-      auto vertexV0FromFitter = dfv.getPCACandidate();
-      auto chi2PCAV0 = dfv.getChi2AtPCACandidate();
-      std::array<float, 3> pvecV0Dau0;
-      std::array<float, 3> pvecV0Dau1;
-      dfv.propagateTracksToVertex();
-      if (!dfv.isPropagateTracksToVertexDone()) {
-        continue;
-      }
-      dfv.getTrack(0).getPxPyPzGlo(pvecV0Dau0);
-      dfv.getTrack(1).getPxPyPzGlo(pvecV0Dau1);
-      std::array<float, 3> pvecV0AsM = {pvecV0Dau0[0] + pvecV0Dau1[0], pvecV0Dau0[1] + pvecV0Dau1[1], pvecV0Dau0[2] + pvecV0Dau1[2]}; // AsM stands for "as mother"
-
-      std::array<float, 3> coordVtxV0 = dfv.getPCACandidatePos();
-      std::array<float, 6> covVtxV0 = dfv.calcPCACovMatrixFlat();
+      // info from LF table
+      std::array<float, 3> pvecV0 = {v0Element.px(), v0Element.py(), v0Element.pz()}; // pvec stands for vector containing the 3-momentum components
+      std::array<float, 3> vertexV0 = {v0Element.x(), v0Element.y(), v0Element.z()};
+      std::array<float, 6> covVtxV0 = v0Element.positionCovMat();
+      std::array<float, 3> pvecV0Dau0 = {casc.pxpos(), casc.pypos(), casc.pzpos()};
+      std::array<float, 3> pvecV0Dau1 = {casc.pxneg(), casc.pyneg(), casc.pzneg()};
 
       // create V0 track
-      auto trackV0 = o2::dataformats::V0(coordVtxV0, pvecV0AsM, covVtxV0, trackParCovV0Dau0, trackParCovV0Dau1, {0, 0}, {0, 0});
+      auto trackV0 = o2::dataformats::V0(vertexV0, pvecV0, covVtxV0, trackParCovV0Dau0, trackParCovV0Dau1, {0, 0}, {0, 0});
       auto trackV0Copy = trackV0;
 
       //-----------------------------reconstruct cascade------------------------------
@@ -226,33 +186,17 @@ struct HfCandidateCreatorOmegac {
       double pseudorapPiFromCas = trackXiDauCharged.eta();
 
       // info from LF table
-      std::array<float, 3> vertexCascLFTable = {casc.x(), casc.y(), casc.z()};
+      std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
+      std::array<float, 3> pvecCasc = {casc.px(), casc.py(), casc.pz()};
+      std::array<float, 6> covVtxCasc = casc.positionCovMat();
+      std::array<float, 3> pvecPionFromCasc = {casc.pxbach(), casc.pybach(), casc.pzbach()};
+
 
       // pion <- casc track to be processed with DCAfitter
       auto trackParVarXiDauCharged = getTrackParCov(trackXiDauCharged);
 
-      // reconstruct cascade with DCAFitter
-      int nVtxFromFitterCasc = dfc.process(trackV0, trackParVarXiDauCharged);
-      if (nVtxFromFitterCasc == 0) {
-        continue;
-      }
-      auto vertexCascFromFitter = dfc.getPCACandidate();
-      auto chi2PCACascade = dfc.getChi2AtPCACandidate();
-      std::array<float, 3> pvecV0AsD; // AsD stands for "as daughter"
-      std::array<float, 3> pvecPionFromCasc;
-      dfc.propagateTracksToVertex();
-      if (!dfc.isPropagateTracksToVertexDone()) {
-        continue;
-      }
-      dfc.getTrack(0).getPxPyPzGlo(pvecV0AsD);
-      dfc.getTrack(1).getPxPyPzGlo(pvecPionFromCasc);
-      std::array<float, 3> pvecCascAsM = {pvecV0AsD[0] + pvecPionFromCasc[0], pvecV0AsD[1] + pvecPionFromCasc[1], pvecV0AsD[2] + pvecPionFromCasc[2]};
-
-      std::array<float, 3> coordVtxCasc = dfc.getPCACandidatePos();
-      std::array<float, 6> covVtxCasc = dfc.calcPCACovMatrixFlat();
-
       // create cascade track
-      auto trackCasc = o2::dataformats::V0(coordVtxCasc, pvecCascAsM, covVtxCasc, trackV0, trackParVarXiDauCharged, {0, 0}, {0, 0});
+      auto trackCasc = o2::dataformats::V0(vertexCasc, pvecCasc, covVtxCasc, trackV0, trackParVarXiDauCharged, {0, 0}, {0, 0});
       auto trackCascCopy = trackCasc;
 
       //-------------------combining cascade and pion tracks--------------------------
@@ -286,6 +230,7 @@ struct HfCandidateCreatorOmegac {
         }
         auto vertexOmegacFromFitter = df.getPCACandidate(); // use df.calcPCACovMatrixFlat() to get the covariance matrix
         auto chi2PCAOmegac = df.getChi2AtPCACandidate();
+        auto covVtxOmegac = df.calcPCACovMatrixFlat();
         std::array<float, 3> pvecCascAsD;
         std::array<float, 3> pvecPionFromOmegac;
         df.propagateTracksToVertex();
@@ -327,53 +272,38 @@ struct HfCandidateCreatorOmegac {
         double ptPrimaryPi = std::sqrt((pvecPionFromOmegac[0] * pvecPionFromOmegac[0]) + (pvecPionFromOmegac[1] * pvecPionFromOmegac[1]));
         hPtPrimaryPi->Fill(ptPrimaryPi);
 
-        // computing invariant mass under the hypothesis of particles ID corresponding to the decay chain
+        // invariant mass under the hypothesis of particles ID corresponding to the decay chain
         double mLambda = v0Element.mLambda();         // from LF table, V0 mass under lambda hypothesis
         double mAntiLambda = v0Element.mAntiLambda(); // from LF table, V0 mass under anti-lambda hypothesis
-
-        double myMLambda = 0.;
-        const std::array<double, 2> arrMassLambda = {massProtonFromPDG, massPionFromPDG};
-        const std::array<double, 2> arrMassAntiLambda = {massPionFromPDG, massProtonFromPDG};
-        if (trackXiDauCharged.sign() > 0) {
-          myMLambda = RecoDecay::m(std::array{pvecV0Dau0, pvecV0Dau1}, arrMassAntiLambda);
-        } else if (trackXiDauCharged.sign() < 0) {
-          myMLambda = RecoDecay::m(std::array{pvecV0Dau0, pvecV0Dau1}, arrMassLambda);
-        }
-
-        const std::array<double, 2> arrMassCascade = {massLambdaFromPDG, massPionFromPDG};
-        double mCascade = RecoDecay::m(std::array{pvecV0AsD, pvecPionFromCasc}, arrMassCascade);
-        double mCascadeNotFixed = RecoDecay::m(std::array{pvecV0AsD, pvecPionFromCasc}, std::array{myMLambda, massPionFromPDG});
-        double mCascLF = casc.mXi();
-
+        double mCasc = casc.mXi();
         const std::array<double, 2> arrMassOmegac = {massXiFromPDG, massPionFromPDG};
         double mOmegac = RecoDecay::m(std::array{pvecCascAsD, pvecPionFromOmegac}, arrMassOmegac);
-        double mOmegacNotFixed = RecoDecay::m(std::array{pvecCascAsD, pvecPionFromOmegac}, std::array{mCascadeNotFixed, massPionFromPDG});
 
         // computing cosPA
-        double cpaV0 = RecoDecay::cpa(coordVtxCasc, coordVtxV0, pvecV0AsM);
+        double cpaV0 = RecoDecay::cpa(vertexCasc, vertexV0, pvecV0);
         double cpaOmegac = RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posZ()}, coordVtxOmegac, pvecOmegac);
-        double cpaCasc = RecoDecay::cpa(coordVtxOmegac, coordVtxCasc, pvecCascAsD);
-        double cpaxyV0 = RecoDecay::cpaXY(coordVtxCasc, coordVtxV0, pvecV0AsM);
+        double cpaCasc = RecoDecay::cpa(coordVtxOmegac, vertexCasc, pvecCasc);
+        double cpaxyV0 = RecoDecay::cpaXY(vertexCasc, vertexV0, pvecV0);
         double cpaxyOmegac = RecoDecay::cpaXY(std::array{collision.posX(), collision.posY(), collision.posZ()}, coordVtxOmegac, pvecOmegac);
-        double cpaxyCasc = RecoDecay::cpaXY(coordVtxOmegac, coordVtxCasc, pvecCascAsD);
+        double cpaxyCasc = RecoDecay::cpaXY(coordVtxOmegac, vertexCasc, pvecCasc);
 
         // computing decay length and ctau
         double decLenOmegac = RecoDecay::distance(std::array{collision.posX(), collision.posY(), collision.posZ()}, coordVtxOmegac);
-        double decLenCascade = RecoDecay::distance(coordVtxOmegac, coordVtxCasc);
-        double decLenV0 = RecoDecay::distance(coordVtxCasc, coordVtxV0);
+        double decLenCascade = RecoDecay::distance(coordVtxOmegac, vertexCasc);
+        double decLenV0 = RecoDecay::distance(vertexCasc, vertexV0);
         double ctOmegac = RecoDecay::ct(pvecOmegac, decLenOmegac, massOmegacFromPDG);
-        double ctCascade = RecoDecay::ct(pvecCascAsD, decLenCascade, massXiFromPDG);
-        double ctV0 = RecoDecay::ct(pvecV0AsM, decLenV0, massLambdaFromPDG);
+        double ctCascade = RecoDecay::ct(pvecCasc, decLenCascade, massXiFromPDG);
+        double ctV0 = RecoDecay::ct(pvecV0, decLenV0, massLambdaFromPDG);
 
         // computing eta
         double pseudorapOmegac = RecoDecay::eta(pvecOmegac);
-        double pseudorapCascade = RecoDecay::eta(pvecCascAsD);
-        double pseudorapV0 = RecoDecay::eta(pvecV0AsM);
+        double pseudorapCascade = RecoDecay::eta(pvecCasc);
+        double pseudorapV0 = RecoDecay::eta(pvecV0);
 
-        // DCA between cascade daughters (from LF table)
-        double dcaCascDau = dfc.getChi2AtPCACandidate();
-        double dcaV0Dau = dfv.getChi2AtPCACandidate();
-        double dcaOmegacDau = df.getChi2AtPCACandidate();
+        // DCA between daughters
+        double dcaCascDau = casc.dcacascdaughters();
+        double dcaV0Dau = casc.dcaV0daughters();
+        double dcaOmegacDau = TMath::Sqrt(df.getChi2AtPCACandidate());
 
         // set hfFlag
         int hfFlag = 1 << DecayType::OmegacToXiPi;
@@ -381,20 +311,19 @@ struct HfCandidateCreatorOmegac {
         // fill test histograms
 
         hInvMassOmegac->Fill(mOmegac);
-        hMassOmegacNotFixed->Fill(mOmegacNotFixed);
 
         // fill the table
         rowCandidate(collision.globalIndex(),
                      collision.posX(), collision.posY(), collision.posZ(),
                      vertexOmegacFromFitter[0], vertexOmegacFromFitter[1], vertexOmegacFromFitter[2],
-                     vertexCascFromFitter[0], vertexCascFromFitter[1], vertexCascFromFitter[2],
-                     vertexV0FromFitter[0], vertexV0FromFitter[1], vertexV0FromFitter[2],
+                     vertexCasc[0], vertexCasc[1], vertexCasc[2],
+                     vertexV0[0], vertexV0[1], vertexV0[2],
                      trackXiDauCharged.sign(),
-                     chi2PCAOmegac, chi2PCAV0, chi2PCACascade,
+                     chi2PCAOmegac, covVtxOmegac, covVtxV0, covVtxCasc,
                      pvecOmegac[0], pvecOmegac[1], pvecOmegac[2],
-                     pvecCascAsD[0], pvecCascAsD[1], pvecCascAsD[2],
+                     pvecCasc[0], pvecCasc[1], pvecCasc[2],
                      pvecPionFromOmegac[0], pvecPionFromOmegac[1], pvecPionFromOmegac[2],
-                     pvecV0AsD[0], pvecV0AsD[1], pvecV0AsD[2],
+                     pvecV0[0], pvecV0[1], pvecV0[2],
                      pvecPionFromCasc[0], pvecPionFromCasc[1], pvecPionFromCasc[2],
                      pvecV0Dau0[0], pvecV0Dau0[1], pvecV0Dau0[2],
                      pvecV0Dau1[0], pvecV0Dau1[1], pvecV0Dau1[2],
@@ -409,13 +338,12 @@ struct HfCandidateCreatorOmegac {
                      trackXiDauCharged.globalIndex(), // index pi <- cascade
                      impactParameterOmegac.getY(), impactParameterOmegac.getZ(),
                      ptPrimaryPi,
-                     mLambda, mAntiLambda, mCascade, mOmegac,
+                     mLambda, mAntiLambda, mCasc, mOmegac,
                      cpaV0, cpaOmegac, cpaCasc, cpaxyV0, cpaxyOmegac, cpaxyCasc,
                      ctOmegac, ctCascade, ctV0,
                      pseudorapV0PosDau, pseudorapV0NegDau, pseudorapPiFromCas, pseudorapPiFromOme,
                      pseudorapOmegac, pseudorapCascade, pseudorapV0,
-                     myMLambda, mCascadeNotFixed, mOmegacNotFixed,
-                     vertexCascLFTable[0], vertexCascLFTable[0], vertexCascLFTable[0], mCascLF, dcaxyPrimaryPi, dcaxyV0Dau0, dcaxyV0Dau1, dcaxyCascDau,
+                     dcaxyPrimaryPi, dcaxyV0Dau0, dcaxyV0Dau1, dcaxyCascDau,
                      dcaCascDau, dcaV0Dau, dcaOmegacDau, hfFlag);
 
       } // loop over pions
