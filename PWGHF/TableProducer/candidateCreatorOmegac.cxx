@@ -78,8 +78,8 @@ struct HfCandidateCreatorOmegac {
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using MyTracks = soa::Join<aod::BigTracks, aod::TracksDCA, aod::TrackSelection>;
-  using CascTable = soa::Join<aod::CascDataExt, aod::CascCovs>;
-
+  using MyCascTable = soa::Join<aod::CascDataExt, aod::CascCovs>;
+  
   OutputObj<TH1F> hPtPrimaryPi{TH1F("hPtPrimaryPi", "p_T primary #pi;p_T (GeV/#it{c});entries", 500, 0, 20)};
   OutputObj<TH1F> hxVertexOmegac{TH1F("hxVertexOmegac", "x Omegac vertex;xVtx;entries", 500, -10, 10)};
   OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
@@ -99,7 +99,7 @@ struct HfCandidateCreatorOmegac {
   void process(SelectedCollisions::iterator const& collision,
                aod::BCsWithTimestamps const& bcWithTimeStamps,
                //aod::CascDataExt const& cascades,
-               CascTable const& cascades,
+               MyCascTable const& cascades,
                MyTracks const& tracks,
                aod::V0Datas const&,
                aod::V0sLinked const&,
@@ -152,7 +152,8 @@ struct HfCandidateCreatorOmegac {
       auto trackV0Dau0 = v0Element.posTrack_as<MyTracks>(); // p <- V0 track (positive track) from MyTracks table
       // V0 negative daughter
       auto trackV0Dau1 = v0Element.negTrack_as<MyTracks>(); // pion <- V0 track (negative track) from MyTracks table
-      auto v0CovElement = casc.v0_as<CascCovs>();
+      auto v0CovElement = casc.v0_as<V0Covs>();
+      //auto cascCovElement = casc.v0_as<VCascovs>();
 
       // check that particles come from the same collision
       if (rejDiffCollTrack) {
@@ -315,6 +316,9 @@ struct HfCandidateCreatorOmegac {
 
         hInvMassOmegac->Fill(mOmegac);
 
+        std::cout << "CheckingCovMatV0" << covVtxV0[0] << " ;  " << covVtxV0[1] << " ;  " << covVtxV0[2] << " ;  " << covVtxV0[3] << " ;  " << covVtxV0[4] << " ;  " << covVtxV0[5] << std::endl;
+        std::cout << "CheckingCovMatCasc" << covVtxCasc[0] << " ;  " << covVtxCasc[1] << " ;  " << covVtxCasc[2] << " ;  " << covVtxCasc[3] << " ;  " << covVtxCasc[4] << " ;  " << covVtxCasc[5] << std::endl;
+
         // fill the table
         rowCandidate(collision.globalIndex(),
                      collision.posX(), collision.posY(), collision.posZ(),
@@ -336,11 +340,11 @@ struct HfCandidateCreatorOmegac {
                      impactParameterCasc.getZ(), impactParameterPrimaryPi.getZ(),
                      impactParameterV0.getY(), impactParameterV0.getZ(),
                      std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterPrimaryPi.getSigmaY2()), std::sqrt(impactParameterV0.getSigmaY2()),
-                     v0.globalIndex(),
+                     casc.v0Id(),
                      v0Element.posTrackId(), v0Element.negTrackId(),
-                     casc.globalIndex(),
+                     casc.cascId(),
                      trackPion.globalIndex(),         // index pi <- omegac
-                     trackXiDauCharged.globalIndex(), // index pi <- cascade
+                     trackXiDauCharged.bachelorId(), // index pi <- cascade
                      impactParameterOmegac.getY(), impactParameterOmegac.getZ(),
                      ptPrimaryPi,
                      mLambda, mAntiLambda, mCasc, mOmegac,
