@@ -1476,7 +1476,7 @@ DECLARE_SOA_TABLE(HfCandOmegac, "AOD", "HFCANDOMEC",
                   hf_cand_omegac::XDecayVtxCascade, hf_cand_omegac::YDecayVtxCascade, hf_cand_omegac::ZDecayVtxCascade,
                   hf_cand_omegac::XDecayVtxV0, hf_cand_omegac::YDecayVtxV0, hf_cand_omegac::ZDecayVtxV0,
                   hf_cand_omegac::SignDecay, // charge pi<-cascade (neg -> omegac, pos -> antiomegac)
-                  hf_cand_omegac::Chi2PCAOmegac, 
+                  hf_cand_omegac::Chi2PCAOmegac,
                   hf_cand_omegac::CovVtxOmegac1, hf_cand_omegac::CovVtxOmegac2, hf_cand_omegac::CovVtxOmegac3, hf_cand_omegac::CovVtxOmegac4, hf_cand_omegac::CovVtxOmegac5, hf_cand_omegac::CovVtxOmegac6,
                   hf_cand_omegac::CovVtxV01, hf_cand_omegac::CovVtxV02, hf_cand_omegac::CovVtxV03, hf_cand_omegac::CovVtxV04, hf_cand_omegac::CovVtxV05, hf_cand_omegac::CovVtxV06,
                   hf_cand_omegac::CovVtxCasc1, hf_cand_omegac::CovVtxCasc2, hf_cand_omegac::CovVtxCasc3, hf_cand_omegac::CovVtxCasc4, hf_cand_omegac::CovVtxCasc5, hf_cand_omegac::CovVtxCasc6,
