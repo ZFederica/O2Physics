@@ -123,7 +123,7 @@ struct HfCandidateCreatorOmegac {
     df.setRefitWithMatCorr(refitWithMatCorr);
 
     double massPionFromPDG = RecoDecay::getMassPDG(kPiPlus); // pdg code 211
-    //double massProtonFromPDG = RecoDecay::getMassPDG(kProton);  // pdg code 2212
+    // double massProtonFromPDG = RecoDecay::getMassPDG(kProton);  // pdg code 2212
     double massLambdaFromPDG = RecoDecay::getMassPDG(kLambda0); // pdg code 3122
     double massXiFromPDG = RecoDecay::getMassPDG(kXiMinus);     // pdg code 3312
     double massOmegacFromPDG = RecoDecay::getMassPDG(kOmegaC0); // pdg code 4332

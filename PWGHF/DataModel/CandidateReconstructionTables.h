@@ -1374,7 +1374,7 @@ DECLARE_SOA_COLUMN(ZDecayVtxCascade, zDecayVtxCascade, float);
 DECLARE_SOA_COLUMN(XDecayVtxV0, xDecayVtxV0, float);
 DECLARE_SOA_COLUMN(YDecayVtxV0, yDecayVtxV0, float);
 DECLARE_SOA_COLUMN(ZDecayVtxV0, zDecayVtxV0, float);
-DECLARE_SOA_COLUMN(SignDecay, signDecay, int); //sign of pi <- xi
+DECLARE_SOA_COLUMN(SignDecay, signDecay, int); // sign of pi <- xi
 DECLARE_SOA_COLUMN(Chi2PCAOmegac, chi2PcaOmegac, float);
 DECLARE_SOA_COLUMN(CovVtxOmegac1, covVtxOmegac1, float);
 DECLARE_SOA_COLUMN(CovVtxOmegac2, covVtxOmegac2, float);
