@@ -181,7 +181,7 @@ struct HfCandidateCreatorOmegac {
       auto trackV0 = o2::dataformats::V0(vertexV0, pvecV0, covVtxV0, trackParCovV0Dau0, trackParCovV0Dau1, {0, 0}, {0, 0});
       auto trackV0Copy = trackV0;
 
-      //-----------------------------reconstruct cascade track------------------------------
+      //-----------------------------reconstruct cascade track-----------------------------
       // pseudorapidity
       double pseudorapPiFromCas = trackXiDauCharged.eta();
 
