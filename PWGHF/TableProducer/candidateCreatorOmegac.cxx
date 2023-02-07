@@ -102,8 +102,7 @@ struct HfCandidateCreatorOmegac {
                MyCascTable const& cascades,
                MyTracks const& tracks,
                MyV0Table const&,
-               aod::V0sLinked const&,
-               aod::V0Covs const&)
+               aod::V0sLinked const&)
   {
 
     // set the magnetic field from CCDB
