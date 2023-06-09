@@ -177,8 +177,8 @@ struct HfCandidateCreatorToXiPi {
         }
 
         // use invariant mass cut to select cascades candidates
-        if(doCascadeInvMassCut) {
-          if(std::abs(casc.mXi() - massXiFromPDG) > (nSigmaInvMassCut * sigmaInvMassCascade)) {
+        if (doCascadeInvMassCut) {
+          if (std::abs(casc.mXi() - massXiFromPDG) > (nSigmaInvMassCut * sigmaInvMassCascade)) {
             continue;
           }
         }
