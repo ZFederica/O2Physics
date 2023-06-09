@@ -148,7 +148,7 @@ struct cascadeBuilder {
   Configurable<float> dQAXiMassWindow{"dQAXiMassWindow", 0.005, "Xi mass window for ITS cluster map QA"};
   Configurable<float> dQAOmegaMassWindow{"dQAOmegaMassWindow", 0.005, "Omega mass window for ITS cluster map QA"};
 
-  OutputObj<TH1D> hExcCounterDCAFitter{TH1F("hExcCounterDCAFitter", "DCa fitter exceptions;status;entries", 5, 0, 5)};
+  OutputObj<TH1D> hExcCounterDCAFitter{TH1D("hExcCounterDCAFitter", "DCa fitter exceptions;status;entries", 5, 0, 5)};
 
 
   int mRunNumber;
@@ -712,14 +712,14 @@ struct cascadeBuilder {
       nCand = fitter.process(lV0Track, lBachelorTrack);
     } catch (...) {
       registry.fill(HIST("hCaughtExceptions"), 0.5f);
-      buildCascadeCandidate->Fill(1);
+      hExcCounterDCAFitter->Fill(1);
       LOG(error) << "Exception caught in DCA fitter process call!";
       return false;
     }
     if (nCand == 0)
       return false;
 
-    buildCascadeCandidate->Fill(0);
+    hExcCounterDCAFitter->Fill(0);
 
     lV0Track = fitter.getTrack(0);
     lBachelorTrack = fitter.getTrack(1);
