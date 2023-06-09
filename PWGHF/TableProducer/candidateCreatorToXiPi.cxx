@@ -492,6 +492,13 @@ struct HfCandidateCreatorToXiPi {
           }
         }
 
+        // use invariant mass cut to select cascades candidates
+        if(doCascadeInvMassCut) {
+          if(std::abs(casc.mXi() - massXiFromPDG) > (nSigmaInvMassCut * sigmaInvMassCascade)) {
+            continue;
+          }
+        }
+
         //--------------------------reconstruct V0 track---------------------------
         // pseudorapidity
         double pseudorapV0PosDau = trackV0Dau0.eta();
