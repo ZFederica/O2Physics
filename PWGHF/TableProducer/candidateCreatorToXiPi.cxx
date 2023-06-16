@@ -112,11 +112,14 @@ struct HfCandidateCreatorToXiPi {
   void processNoStrTrk(SelectedCollisions const& collisions,
                       aod::BCsWithTimestamps const& bcWithTimeStamps,
                       MyTracks const& tracks,
+                      aod::TrackCompColls const&,
                       FilteredHfTrackAssocSel const& trackIndices,
                       MyCascTable const& cascades,
                       MyV0Table const&,
                       aod::V0sLinked const&)
   {
+
+    bool isPiAmb = false;
 
     for (const auto& collision : collisions) {
 
@@ -293,6 +296,12 @@ struct HfCandidateCreatorToXiPi {
           o2::track::TrackParCov trackOmegac = df.createParentTrackParCov();
           trackOmegac.setAbsCharge(0);
 
+          // check if pi <- OmegaC track is ambiguous
+          auto trackPionFromTrkToCollAssoc = trackIndexPion.track_as<aod::TrackCompColls>();
+          if(trackPionFromTrkToCollAssoc.compatibleCollIds().size() != 1) {
+            isPiAmb = true;
+          }
+
           // DCAxy (computed with propagateToDCABxByBz method)
           float dcaxyV0Dau0 = trackV0Dau0.dcaXY();
           float dcaxyV0Dau1 = trackV0Dau1.dcaXY();
@@ -412,7 +421,7 @@ struct HfCandidateCreatorToXiPi {
                        pseudorapOmegac, pseudorapCascade, pseudorapV0,
                        dcaxyV0Dau0, dcaxyV0Dau1, dcaxyPiFromCasc,
                        dcazV0Dau0, dcazV0Dau1, dcazPiFromCasc,
-                       dcaCascDau, dcaV0Dau, dcaOmegacDau, hfFlag);
+                       dcaCascDau, dcaV0Dau, dcaOmegacDau, hfFlag, isPiAmb);
 
         } // loop over pions
       }   // loop over cascades
@@ -428,11 +437,14 @@ struct HfCandidateCreatorToXiPi {
   void processStrTrk (SelectedCollisions const& collisions,
                       aod::BCsWithTimestamps const& bcWithTimeStamps,
                       MyTracks const& tracks,
+                      aod::TrackCompColls const&,
                       FilteredHfTrackAssocSel const& trackIndices,
                       MyCascTableStrTrk const& cascades,
                       MyV0Table const&,
                       aod::V0sLinked const&)
   {
+
+    bool isPiAmb = false;
 
     for (const auto& collision : collisions) {
 
@@ -609,6 +621,12 @@ struct HfCandidateCreatorToXiPi {
           o2::track::TrackParCov trackOmegac = df.createParentTrackParCov();
           trackOmegac.setAbsCharge(0);
 
+          // check if pi <- OmegaC track is ambiguous
+          auto trackPionFromTrkToCollAssoc = trackIndexPion.track_as<aod::TrackCompColls>();
+          if(trackPionFromTrkToCollAssoc.compatibleCollIds().size() != 1) {
+            isPiAmb = true;
+          }
+
           // DCAxy (computed with propagateToDCABxByBz method)
           float dcaxyV0Dau0 = trackV0Dau0.dcaXY();
           float dcaxyV0Dau1 = trackV0Dau1.dcaXY();
@@ -728,7 +746,7 @@ struct HfCandidateCreatorToXiPi {
                        pseudorapOmegac, pseudorapCascade, pseudorapV0,
                        dcaxyV0Dau0, dcaxyV0Dau1, dcaxyPiFromCasc,
                        dcazV0Dau0, dcazV0Dau1, dcazPiFromCasc,
-                       dcaCascDau, dcaV0Dau, dcaOmegacDau, hfFlag);
+                       dcaCascDau, dcaV0Dau, dcaOmegacDau, hfFlag, isPiAmb);
 
         } // loop over pions
       }   // loop over cascades
@@ -740,6 +758,35 @@ struct HfCandidateCreatorToXiPi {
 
 
 };        // end of struct
+
+struct HfCandidateCreatorToXiPiAmbTrk {
+
+  Produces<aod::HfToXiPiAmbTrk> rowAmbTrk;
+  using MyTracksAmbInfo = soa::Join<aod::Tracks, aod::TrackCompColls>;
+
+
+
+
+  void init(InitContext const&) {}
+
+
+
+  void processDoNoAmbTrk(aod::Collisions::iterator const& collision)
+  {
+    // dummy process function
+  }
+  PROCESS_SWITCH(HfCandidateCreatorToXiPiAmbTrk, processDoNoAmbTrk, "Do not check on ambiguous tracks", true);
+
+
+
+  void processDoAmbTrk(MyTracksAmbInfo const& trks)
+  {
+    for (const auto& trk : trks) {
+      rowAmbTrk(trk.pt(), trk.pz(), trk.p(), trk.phi(), trk.eta(), trk.compatibleCollIds().size());
+    }
+  }
+  PROCESS_SWITCH(HfCandidateCreatorToXiPiAmbTrk, processDoAmbTrk, "Check on ambiguous tracks", false);
+}; // end of struct
 
 /// Performs MC matching.
 struct HfCandidateCreatorToXiPiMc {
@@ -916,5 +963,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<HfCandidateCreatorToXiPi>(cfgc),
-    adaptAnalysisTask<HfCandidateCreatorToXiPiMc>(cfgc)};
+    adaptAnalysisTask<HfCandidateCreatorToXiPiMc>(cfgc),
+    adaptAnalysisTask<HfCandidateCreatorToXiPiAmbTrk>(cfgc)};
 }

@@ -113,6 +113,7 @@ DECLARE_SOA_COLUMN(DcaZToPvCascDau, dcaZToPvCascDau, float);
 DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, float);
 DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, float);
 DECLARE_SOA_COLUMN(DcaOmegacDau, dcaOmegacDau, float);
+DECLARE_SOA_COLUMN(IsPiAmb, isPiAmb, bool);
 // from creator - MC
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
@@ -164,7 +165,7 @@ DECLARE_SOA_TABLE(HfToXiPiFull, "AOD", "HFTOXIPIFULL",
                   full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassOmegac, full::ResultSelections,
                   full::TpcNSigmaPiFromOmega, full::TpcNSigmaPiFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
                   full::TofNSigmaPiFromOmega, full::TofNSigmaPiFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
-                  full::FlagMcMatchRec, full::DebugMcRec);
+                  full::FlagMcMatchRec, full::DebugMcRec, full::IsPiAmb);
 
 DECLARE_SOA_TABLE(HfToXiPiEvents, "AOD", "HFTOXIPIEVENTS",
                   collision::NumContrib,
@@ -295,7 +296,8 @@ struct HfTreeCreatorToXiPi {
       candidate.tofNSigmaPiFromLambda(),
       candidate.tofNSigmaPrFromLambda(),
       flagMc,
-      debugMc);
+      debugMc,
+      candidate.isPiAmb());
   }
 
   void processData(aod::Collisions const& collisions,

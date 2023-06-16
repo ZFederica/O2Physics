@@ -1511,7 +1511,7 @@ DECLARE_SOA_COLUMN(ErrImpactParPrimaryPiXY, errImpactParPrimaryPiXY, float);
 DECLARE_SOA_COLUMN(ErrImpactParV0XY, errImpactParV0XY, float);
 DECLARE_SOA_INDEX_COLUMN(V0, v0);
 DECLARE_SOA_INDEX_COLUMN(Cascade, cascade);
-DECLARE_SOA_INDEX_COLUMN_FULL(PrimaryPi, primaryPi, int, Tracks, "_primarypi");
+DECLARE_SOA_INDEX_COLUMN_FULL(PrimaryPi, primaryPi, int, Tracks, "_primarypi"); // index from regular track table
 DECLARE_SOA_COLUMN(ImpactParOmegacXY, impactParOmegacXY, float);
 DECLARE_SOA_COLUMN(ImpactParOmegacZ, impactParOmegacZ, float);
 DECLARE_SOA_COLUMN(InvMassLambda, invMassLambda, double);
@@ -1543,6 +1543,7 @@ DECLARE_SOA_COLUMN(DcaZToPvCascDau, dcaZToPvCascDau, float);
 DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, float);
 DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, float);
 DECLARE_SOA_COLUMN(DcaOmegacDau, dcaOmegacDau, float);
+DECLARE_SOA_COLUMN(IsPiAmb, isPiAmb, bool);
 
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
@@ -1590,7 +1591,7 @@ DECLARE_SOA_TABLE(HfCandToXiPi, "AOD", "HFCANDTOXIPI",
                   hf_cand_toxipi::EtaOmegac, hf_cand_toxipi::EtaCascade, hf_cand_toxipi::EtaV0,
                   hf_cand_toxipi::DcaXYToPvV0Dau0, hf_cand_toxipi::DcaXYToPvV0Dau1, hf_cand_toxipi::DcaXYToPvCascDau,
                   hf_cand_toxipi::DcaZToPvV0Dau0, hf_cand_toxipi::DcaZToPvV0Dau1, hf_cand_toxipi::DcaZToPvCascDau,
-                  hf_cand_toxipi::DcaCascDau, hf_cand_toxipi::DcaV0Dau, hf_cand_toxipi::DcaOmegacDau, hf_track_index::HFflag);
+                  hf_cand_toxipi::DcaCascDau, hf_cand_toxipi::DcaV0Dau, hf_cand_toxipi::DcaOmegacDau, hf_track_index::HFflag, hf_cand_toxipi::IsPiAmb);
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfToXiPiMCRec, "AOD", "HFTOXIPIMCREC", //!
@@ -1600,6 +1601,21 @@ DECLARE_SOA_TABLE(HfToXiPiMCRec, "AOD", "HFTOXIPIMCREC", //!
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfToXiPiMCGen, "AOD", "HFTOXIPIMCGEN", //!
                   hf_cand_toxipi::FlagMcMatchGen, hf_cand_toxipi::DebugGenCharmBar, hf_cand_toxipi::DebugGenXi, hf_cand_toxipi::DebugGenLambda);
+
+namespace hf_cand_toxipi_ambtrk
+{
+DECLARE_SOA_COLUMN(PT, pT, float);
+DECLARE_SOA_COLUMN(PZ, pZ, float);
+DECLARE_SOA_COLUMN(P, p, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(Eta, eta, float);
+DECLARE_SOA_COLUMN(NrCollAss, nrCollAss, int);
+} // end of namespace hf_cand_toxipi_ambtrk
+// declare dedicated table
+DECLARE_SOA_TABLE(HfToXiPiAmbTrk, "AOD", "HFTOXIPIAMBTRK",
+                  hf_cand_toxipi_ambtrk::PT, hf_cand_toxipi_ambtrk::PZ, hf_cand_toxipi_ambtrk::P,
+                  hf_cand_toxipi_ambtrk::Phi, hf_cand_toxipi_ambtrk::Eta, hf_cand_toxipi_ambtrk::NrCollAss);
+
 
 // specific chic candidate properties
 namespace hf_cand_chic
