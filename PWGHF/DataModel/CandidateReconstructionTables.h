@@ -1555,8 +1555,8 @@ DECLARE_SOA_COLUMN(DebugGenLambda, debugGenLambda, int8_t);
 
 // mapping of decay types
 enum DecayType { DecayToXiPi = 0,
-                 OmegaczeroToXiPi,
-                 XiczeroToXiPi };
+                OmegaczeroToXiPi,
+                XiczeroToXiPi };
 
 } // end of namespace hf_cand_toxipi
 
