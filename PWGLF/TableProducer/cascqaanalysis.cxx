@@ -21,6 +21,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
+#include "PWGLF/DataModel/cascqaanalysis.h"
 #include "TRandom.h"
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
@@ -35,87 +36,6 @@ using namespace o2::framework::expressions;
 using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa>;
 using LabeledCascades = soa::Join<aod::CascDataExt, aod::McCascLabels>;
 
-namespace o2::aod
-{
-
-namespace mycascades
-{
-
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);
-DECLARE_SOA_COLUMN(CollisionZ, zcoll, float);
-DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);
-DECLARE_SOA_COLUMN(MultFV0A, multFV0A, float);
-DECLARE_SOA_COLUMN(Sign, sign, float);
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(RapXi, rapxi, float);
-DECLARE_SOA_COLUMN(RapOmega, rapomega, float);
-DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(MassXi, massxi, float);
-DECLARE_SOA_COLUMN(MassOmega, massomega, float);
-DECLARE_SOA_COLUMN(MassLambdaDau, masslambdadau, float);
-DECLARE_SOA_COLUMN(CascRadius, cascradius, float);
-DECLARE_SOA_COLUMN(V0Radius, v0radius, float);
-DECLARE_SOA_COLUMN(CascCosPA, casccospa, float);
-DECLARE_SOA_COLUMN(V0CosPA, v0cospa, float);
-DECLARE_SOA_COLUMN(DCAPosToPV, dcapostopv, float);
-DECLARE_SOA_COLUMN(DCANegToPV, dcanegtopv, float);
-DECLARE_SOA_COLUMN(DCABachToPV, dcabachtopv, float);
-DECLARE_SOA_COLUMN(DCACascDaughters, dcacascdaughters, float);
-DECLARE_SOA_COLUMN(DCAV0Daughters, dcav0daughters, float);
-DECLARE_SOA_COLUMN(DCAV0ToPV, dcav0topv, float);
-DECLARE_SOA_COLUMN(PosEta, poseta, float);
-DECLARE_SOA_COLUMN(NegEta, negeta, float);
-DECLARE_SOA_COLUMN(BachEta, bacheta, float);
-DECLARE_SOA_COLUMN(PosITSHits, positshits, float);
-DECLARE_SOA_COLUMN(NegITSHits, negitshits, float);
-DECLARE_SOA_COLUMN(BachITSHits, bachitshits, float);
-DECLARE_SOA_COLUMN(CtauXi, ctauxi, float);
-DECLARE_SOA_COLUMN(CtauOmega, ctauomega, float);
-DECLARE_SOA_COLUMN(NTPCSigmaNegPr, ntpcsigmanegpr, float);
-DECLARE_SOA_COLUMN(NTPCSigmaPosPr, ntpcsigmapospr, float);
-DECLARE_SOA_COLUMN(NTPCSigmaNegPi, ntpcsigmanegpi, float);
-DECLARE_SOA_COLUMN(NTPCSigmaPosPi, ntpcsigmapospi, float);
-DECLARE_SOA_COLUMN(NTPCSigmaBachPi, ntpcsigmabachpi, float);
-DECLARE_SOA_COLUMN(NTPCSigmaBachKa, ntpcsigmabachka, float);
-DECLARE_SOA_COLUMN(NTOFSigmaNegPr, ntofsigmanegpr, float);
-DECLARE_SOA_COLUMN(NTOFSigmaPosPr, ntofsigmapospr, float);
-DECLARE_SOA_COLUMN(NTOFSigmaNegPi, ntofsigmanegpi, float);
-DECLARE_SOA_COLUMN(NTOFSigmaPosPi, ntofsigmapospi, float);
-DECLARE_SOA_COLUMN(NTOFSigmaBachPi, ntofsigmabachpi, float);
-DECLARE_SOA_COLUMN(NTOFSigmaBachKa, ntofsigmabachka, float);
-DECLARE_SOA_COLUMN(PosNTPCClusters, posntpcscls, float);
-DECLARE_SOA_COLUMN(NegNTPCClusters, negntpcscls, float);
-DECLARE_SOA_COLUMN(BachNTPCClusters, bachntpcscls, float);
-DECLARE_SOA_COLUMN(PosHasTOF, poshastof, float);
-DECLARE_SOA_COLUMN(NegHasTOF, neghastof, float);
-DECLARE_SOA_COLUMN(BachHasTOF, bachhastof, float);
-DECLARE_SOA_COLUMN(PosPt, pospt, float);
-DECLARE_SOA_COLUMN(NegPt, negpt, float);
-DECLARE_SOA_COLUMN(BachPt, bachpt, float);
-DECLARE_SOA_COLUMN(McPdgCode, mcPdgCode, float);                     //! -1 unknown
-DECLARE_SOA_COLUMN(IsPrimary, isPrimary, float);                     //! -1 unknown, 0 not primary, 1 primary
-DECLARE_SOA_COLUMN(BachBaryonCosPA, bachBaryonCosPA, float);         //! avoid bach-baryon correlated inv mass structure in analysis
-DECLARE_SOA_COLUMN(BachBaryonDCAxyToPV, bachBaryonDCAxyToPV, float); //! avoid bach-baryon correlated inv mass structure in analysis
-
-} // namespace mycascades
-
-DECLARE_SOA_TABLE(MyCascades, "AOD", "MYCASCADES", o2::soa::Index<>,
-                  mycascades::CollisionId, mycascades::CollisionZ, mycascades::MultFT0M, mycascades::MultFV0A, mycascades::Sign, mycascades::Pt, mycascades::RapXi, mycascades::RapOmega, mycascades::Eta, mycascades::MassXi, mycascades::MassOmega, mycascades::MassLambdaDau, mycascades::CascRadius, mycascades::V0Radius,
-                  mycascades::CascCosPA, mycascades::V0CosPA, mycascades::DCAPosToPV, mycascades::DCANegToPV,
-                  mycascades::DCABachToPV, mycascades::DCACascDaughters, mycascades::DCAV0Daughters, mycascades::DCAV0ToPV, mycascades::PosEta, mycascades::NegEta,
-                  mycascades::BachEta, mycascades::PosITSHits, mycascades::NegITSHits, mycascades::BachITSHits,
-                  mycascades::CtauXi, mycascades::CtauOmega,
-                  mycascades::NTPCSigmaNegPr, mycascades::NTPCSigmaPosPr, mycascades::NTPCSigmaNegPi, mycascades::NTPCSigmaPosPi, mycascades::NTPCSigmaBachPi, mycascades::NTPCSigmaBachKa,
-                  mycascades::NTOFSigmaNegPr, mycascades::NTOFSigmaPosPr, mycascades::NTOFSigmaNegPi,
-                  mycascades::NTOFSigmaPosPi, mycascades::NTOFSigmaBachPi, mycascades::NTOFSigmaBachKa,
-                  mycascades::PosNTPCClusters, mycascades::NegNTPCClusters, mycascades::BachNTPCClusters,
-                  mycascades::PosHasTOF, mycascades::NegHasTOF, mycascades::BachHasTOF,
-                  mycascades::PosPt, mycascades::NegPt, mycascades::BachPt,
-                  mycascades::McPdgCode, mycascades::IsPrimary,
-                  cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV);
-
-} // namespace o2::aod
-
 struct cascqaanalysis {
 
   // Produces
@@ -125,7 +45,9 @@ struct cascqaanalysis {
 
   AxisSpec ptAxis = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
   AxisSpec rapidityAxis = {200, -2.0f, 2.0f, "y"};
-  AxisSpec centFT0MAxis = {100, 0.0f, 100.0f, "FT0M (%)"};
+  ConfigurableAxis centAxis{"FT0M",
+                            {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100},
+                            "FT0M (%)"};
 
   void init(InitContext const&)
   {
@@ -133,22 +55,24 @@ struct cascqaanalysis {
     TString hNEventsMCLabels[4] = {"All", "z vrtx", "INEL>0", "Associated with rec. collision"};
     TString hNEventsLabels[4] = {"All", "sel8", "z vrtx", "INEL>0"};
 
-    registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{4, 0.f, 4.f}}});
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1F, {{4, 0.f, 4.f}}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
       registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(n, hNEventsLabels[n - 1]);
     }
+    registry.add("hNAssocCollisions", "hNAssocCollisions", {HistType::kTH1F, {{5, -0.5f, 4.5f}}});
+    registry.add("hNContributorsCorrelation", "hNContributorsCorrelation", {HistType::kTH2F, {{250, -0.5f, 249.5f, "Secondary Contributor"}, {250, -0.5f, 249.5f, "Main Contributor"}}});
     registry.add("hZCollision", "hZCollision", {HistType::kTH1F, {{200, -20.f, 20.f}}});
     registry.add("hZCollisionGen", "hZCollisionGen", {HistType::kTH1F, {{200, -20.f, 20.f}}});
     registry.add("hCentFT0M", "hCentFT0M", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
-    registry.add("hPtXiPlusTrue", "hPtXiPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
-    registry.add("hPtXiMinusTrue", "hPtXiMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
-    registry.add("hPtOmegaPlusTrue", "hPtOmegaPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
-    registry.add("hPtOmegaMinusTrue", "hPtOmegaMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
-    registry.add("hPtXiPlusTrueAssoiciatedWithSelColl", "hPtXiPlusTrueAssoiciatedWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
-    registry.add("hPtXiMinusTrueAssoiciatedWithSelColl", "hPtXiMinusTrueAssoiciatedWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
-    registry.add("hPtOmegaPlusTrueAssoiciatedWithSelColl", "hPtOmegaPlusTrueAssoiciatedWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
-    registry.add("hPtOmegaMinusTrueAssoiciatedWithSelColl", "hPtOmegaMinusTrueAssoiciatedWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
+    registry.add("hPtXiPlusTrue", "hPtXiPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, centAxis}});
+    registry.add("hPtXiMinusTrue", "hPtXiMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, centAxis}});
+    registry.add("hPtOmegaPlusTrue", "hPtOmegaPlusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, centAxis}});
+    registry.add("hPtOmegaMinusTrue", "hPtOmegaMinusTrue", {HistType::kTH3F, {ptAxis, rapidityAxis, centAxis}});
+    registry.add("hPtXiPlusTrueAssoiciatedWithSelColl", "hPtXiPlusTrueAssoiciatedWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, centAxis}});
+    registry.add("hPtXiMinusTrueAssoiciatedWithSelColl", "hPtXiMinusTrueAssoiciatedWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, centAxis}});
+    registry.add("hPtOmegaPlusTrueAssoiciatedWithSelColl", "hPtOmegaPlusTrueAssoiciatedWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, centAxis}});
+    registry.add("hPtOmegaMinusTrueAssoiciatedWithSelColl", "hPtOmegaMinusTrueAssoiciatedWithSelColl", {HistType::kTH3F, {ptAxis, rapidityAxis, centAxis}});
 
     registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{4, 0.0f, 4.0f}}});
     for (Int_t n = 1; n <= registry.get<TH1>(HIST("hNEventsMC"))->GetNbinsX(); n++) {
@@ -163,6 +87,12 @@ struct cascqaanalysis {
     AxisSpec allTracks = {2000, 0, 2000, "N_{all tracks}"};
     AxisSpec secondaryTracks = {2000, 0, 2000, "N_{secondary tracks}"};
     registry.add("hINELgt0PrimariesSelection", "hINELgt0PrimariesSelection", {HistType::kTH2F, {allTracks, secondaryTracks}});
+    registry.add("hDCAz_BefCut", "hDCAz_BefCut", HistType::kTH2F, {{400, -0.2, 0.2, "DCAz"}, {150, 0.0, 15.0, "p_{T} (GeV/c)"}});
+    registry.add("hDCAz_AfterCut", "hDCAz_AfterCut", HistType::kTH2F, {{400, -0.2, 0.2, "DCAz"}, {150, 0.0, 15.0, "p_{T} (GeV/c)"}});
+    registry.add("hDCAxy_BefCut", "hDCAxy_BefCut", HistType::kTH2F, {{400, -0.2, 0.2, "DCAxy"}, {150, 0.0, 15.0, "p_{T} (GeV/c)"}});
+    registry.add("hDCAxy_AfterCut", "hDCAxy_AfterCut", HistType::kTH2F, {{400, -0.2, 0.2, "DCAxy"}, {150, 0.0, 15.0, "p_{T} (GeV/c)"}});
+    registry.add("hNchMultFT0M", "hNchMultFT0M", HistType::kTH2F, {{300, 0.0f, 300.0f, "N_{ch}"}, {10000, 0.f, 10000.f, "FT0M signal"}});
+    registry.add("hNchMultFV0A", "hNchMultFV0A", HistType::kTH2F, {{300, 0.0f, 300.0f, "N_{ch}"}, {15000, 0.f, 15000.f, "FV0A signal"}});
   }
 
   // Event selection criteria
@@ -257,6 +187,12 @@ struct cascqaanalysis {
     return true;
   }
 
+  template <typename TTrack>
+  bool isPrimaryTrack(TTrack track)
+  {
+    return (TMath::Abs(track.dcaXY()) < (maxDCANsigmaScaling * (DCASigma + DCAPtScaling / track.pt()))) && (TMath::Abs(track.dcaZ()) < maxDCAz);
+  }
+
   template <typename TTracks>
   bool isINELgt0(TTracks tracks, bool isFillEventSelectionQA)
   {
@@ -264,12 +200,19 @@ struct cascqaanalysis {
     std::vector<float> TracksEta(tracks.size());
     int nTracks = 0;
     int nRejTracks = 0;
+
     for (const auto& track : tracks) {
-      if (TMath::Abs(track.dcaXY()) > (maxDCANsigmaScaling * (DCASigma + DCAPtScaling / track.pt())) || TMath::Abs(track.dcaZ()) > maxDCAz) {
+      registry.fill(HIST("hDCAxy_BefCut"), track.dcaXY(), track.pt());
+      registry.fill(HIST("hDCAz_BefCut"), track.dcaZ(), track.pt());
+
+      if (!isPrimaryTrack(track)) {
         nRejTracks++;
         continue; // consider only primaries
       }
       TracksEta[nTracks++] = track.eta();
+
+      registry.fill(HIST("hDCAxy_AfterCut"), track.dcaXY(), track.pt());
+      registry.fill(HIST("hDCAz_AfterCut"), track.dcaZ(), track.pt());
     }
 
     if (isFillEventSelectionQA) {
@@ -331,6 +274,21 @@ struct cascqaanalysis {
     } else {
       return false;
     }
+  }
+
+  template <typename TCollision, typename TTracks>
+  void fillMultHisto(TCollision const& collision, TTracks const& tracks)
+  {
+    double Nch = 0;
+    for (const auto& track : tracks) {
+      if (TMath::Abs(track.eta()) > 0.5)
+        continue;
+      if (!isPrimaryTrack(track))
+        continue;
+      Nch++;
+    }
+    registry.fill(HIST("hNchMultFT0M"), Nch, collision.multFT0A() + collision.multFT0C());
+    registry.fill(HIST("hNchMultFV0A"), Nch, collision.multFV0A());
   }
 
   void processData(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
@@ -413,6 +371,8 @@ struct cascqaanalysis {
       return;
     }
 
+    fillMultHisto(collision, Tracks);
+
     float lEventScale = scalefactor;
 
     for (const auto& casc : Cascades) {              // loop over Cascades
@@ -467,7 +427,7 @@ struct cascqaanalysis {
         }
         // Fill table
         if (fRand->Rndm() < lEventScale) {
-          mycascades(casc.globalIndex(), collision.posZ(), collision.centFT0M(), collision.centFV0A(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
+          mycascades(casc.globalIndex(), collision.posZ(), collision.multFT0A() + collision.multFT0C(), collision.multFV0A(), casc.sign(), casc.pt(), casc.yXi(), casc.yOmega(), casc.eta(),
                      casc.mXi(), casc.mOmega(), casc.mLambda(), casc.cascradius(), casc.v0radius(),
                      casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
                      casc.dcapostopv(), casc.dcanegtopv(), casc.dcabachtopv(), casc.dcacascdaughters(), casc.dcaV0daughters(), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()),
@@ -525,14 +485,25 @@ struct cascqaanalysis {
     }
 
     std::vector<int64_t> SelectedEvents(collisions.size());
+    std::vector<int64_t> NumberOfContributors;
     int nevts = 0;
+    int nAssocColl = 0;
     for (const auto& collision : collisions) {
       if (!AcceptEvent(collision, Tracks, 0)) {
         continue;
       }
       SelectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
+      if (collision.mcCollision_as<aod::McCollisions>().globalIndex() == mcCollision.globalIndex()) {
+        nAssocColl++;
+        NumberOfContributors.push_back(collision.numContrib());
+      }
     }
     SelectedEvents.resize(nevts);
+    registry.fill(HIST("hNAssocCollisions"), nAssocColl);
+    if (NumberOfContributors.size() == 2) {
+      std::sort(NumberOfContributors.begin(), NumberOfContributors.end());
+      registry.fill(HIST("hNContributorsCorrelation"), NumberOfContributors[0], NumberOfContributors[1]);
+    }
 
     const auto evtReconstructedAndSelected = std::find(SelectedEvents.begin(), SelectedEvents.end(), mcCollision.globalIndex()) != SelectedEvents.end(); // at least 1 selected reconstructed event has the same global index as mcCollision
 
