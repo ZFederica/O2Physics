@@ -48,7 +48,10 @@ using namespace o2::aod::hf_track_index;
 using namespace o2::aod::hf_sel_collision;
 using namespace o2::aod::hf_cand_toxipi;
 
-// Reconstruction of omegac candidates
+// Reconstruction of xic and omegac --> xi pi candidates
+// branch for MC studies
+
+// TURN ON AMBIGUOUS TRACKS HANDLING AND aod::TrackCompColls TABLE PRODUCTION!!
 struct HfCandidateCreatorToXiPi {
   Produces<aod::HfCandToXiPi> rowCandidate;
 
@@ -84,7 +87,7 @@ struct HfCandidateCreatorToXiPi {
   int runNumber;
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using MyTracks = soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfPvRefitTrack>;
+  using MyTracks = soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfPvRefitTrack, aod::TrackCompColls>;
   using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
   using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>; // to use strangeness tracking, use aod::TraCascDatas instead of aod::CascDatas
   //using MyCascTable = soa::Join<aod::TraCascDatas, aod::CascCovs>; // to use strangeness tracking
@@ -111,7 +114,6 @@ struct HfCandidateCreatorToXiPi {
   void process(SelectedCollisions const& collisions,
               aod::BCsWithTimestamps const& bcWithTimeStamps,
               MyTracks const& tracks,
-              aod::TrackCompColls const&,
               FilteredHfTrackAssocSel const& trackIndices,
               MyCascTable const& cascades,
               MyV0Table const&,
@@ -296,8 +298,7 @@ struct HfCandidateCreatorToXiPi {
           trackOmegac.setAbsCharge(0);
 
           // check if pi <- OmegaC track is ambiguous
-          auto trackPionFromTrkToCollAssoc = trackIndexPion.track_as<aod::TrackCompColls>();
-          if(trackPionFromTrkToCollAssoc.compatibleCollIds().size() != 1) {
+          if(trackPion.compatibleCollIds().size() != 1) {
             isPiAmb = true;
           }
 
@@ -451,7 +452,6 @@ struct HfCandidateCreatorToXiPiAmbTrk {
   }
   PROCESS_SWITCH(HfCandidateCreatorToXiPiAmbTrk, processDoAmbTrk, "Check on ambiguous tracks", false);
 }; // end of struct
-
 
 
 // Performs MC matching.
