@@ -90,7 +90,7 @@ struct HfCandidateCreatorToXiPi {
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
   using MyTracks = soa::Join<aod::BigTracks, aod::TracksDCA, aod::HfPvRefitTrack, aod::TrackCompColls>;
   using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
-  using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>; // to use strangeness tracking, use aod::TraCascDatas instead of aod::CascDatas
+  using MyCascTable =aod::TraCascDatas; //aod::CascCovs for cascade covariance matrix
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0); // filter to use only HF selected collisions
@@ -116,6 +116,7 @@ struct HfCandidateCreatorToXiPi {
               MyTracks const& tracks,
               FilteredHfTrackAssocSel const& trackIndices,
               MyCascTable const& cascades,
+              aod::CascCovs const&,
               MyV0Table const&,
               aod::V0sLinked const&)
   {
@@ -226,9 +227,10 @@ struct HfCandidateCreatorToXiPi {
         std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
         std::array<float, 3> pVecCasc = {casc.px(), casc.py(), casc.pz()};
         std::array<float, 21> covCasc = {0.};
+        auto cascCovElement = casc.strangeTrack_as<aod::CascCovs>();
         for (int i = 0; i < 6; i++) {
-          covCasc[MomInd[i]] = casc.momentumCovMat()[i];
-          covCasc[i] = casc.positionCovMat()[i];
+          covCasc[MomInd[i]] = cascCovElement.momentumCovMat()[i];
+          covCasc[i] = cascCovElement.positionCovMat()[i];
         }
 
         // create cascade track
