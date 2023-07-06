@@ -101,6 +101,7 @@ struct HfCandidateCreatorToXiPi {
   Preslice<MyCascTable> cascadesPerCollision = aod::cascdata::collisionId;
 
   OutputObj<TH1F> hInvMassOmegac{TH1F("hInvMassOmegac", "Omegac invariant mass;inv mass;entries", 500, 2.2, 3.1)};
+  OutputObj<TH1D> hIsPiAmb{TH1D("hIsPiAmb", "isPiAmbiguous;status;entries", 5, 0, 5)};
 
   void init(InitContext const&)
   {
@@ -303,6 +304,13 @@ struct HfCandidateCreatorToXiPi {
           // check if pi <- OmegaC track is ambiguous
           if(trackPion.compatibleCollIds().size() != 1) {
             isPiAmb = true;
+          }
+          if(trackPion.compatibleCollIds().size() == 0) {
+            hIsPiAmb->Fill(0);
+          } else if (trackPion.compatibleCollIds().size() == 1) {
+            hIsPiAmb->Fill(1);
+          } else if (trackPion.compatibleCollIds().size() > 1) {
+            hIsPiAmb->Fill(2);
           }
 
           // DCAxy (computed with propagateToDCABxByBz method)
