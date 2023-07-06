@@ -302,6 +302,13 @@ struct HfCandidateCreatorToXiPi {
           if(trackPion.compatibleCollIds().size() != 1) {
             isPiAmb = true;
           }
+          if(trackPion.compatibleCollIds().size() == 0) {
+            hIsPiAmb->Fill(0);
+          } else if (trackPion.compatibleCollIds().size() == 1) {
+            hIsPiAmb->Fill(1);
+          } else if (trackPion.compatibleCollIds().size() > 1) {
+            hIsPiAmb->Fill(2);
+          }
 
           // DCAxy (computed with propagateToDCABxByBz method)
           float dcaxyV0Dau0 = trackV0Dau0.dcaXY();
