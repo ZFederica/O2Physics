@@ -366,13 +366,21 @@ struct HfCandidateCreatorToXiPi {
           const std::array<double, 2> arrMassOmegac = {massXiFromPDG, massPionFromPDG};
           double mOmegac = RecoDecay::m(std::array{pVecCascAsD, pVecPionFromOmegac}, arrMassOmegac);
 
-          // computing cosPA
+          // computing cosPA wrt particle production vertex
           double cpaV0 = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
           double cpaOmegac = RecoDecay::cpa(pvCoord, coordVtxOmegac, pVecOmegac);
           double cpaCasc = RecoDecay::cpa(coordVtxOmegac, vertexCasc, pVecCasc);
           double cpaxyV0 = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
           double cpaxyOmegac = RecoDecay::cpaXY(pvCoord, coordVtxOmegac, pVecOmegac);
           double cpaxyCasc = RecoDecay::cpaXY(coordVtxOmegac, vertexCasc, pVecCasc);
+
+          // computing cosPA wrt PV (with refit)
+          double cpaV0_toPV = RecoDecay::cpa(pvCoord, vertexV0, pVecV0);
+          double cpaCasc_toPV = RecoDecay::cpa(pvCoord, vertexCasc, pVecCasc);
+
+          // cosPA wrt PV (from LF tables -> no refit)
+          float cpaV0_fromLF = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+          float cpaCasc_fromLF = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
 
           // computing decay length and ctau
           double decLenOmegac = RecoDecay::distance(pvCoord, coordVtxOmegac);
@@ -430,7 +438,8 @@ struct HfCandidateCreatorToXiPi {
                       pseudorapOmegac, pseudorapCascade, pseudorapV0,
                       dcaxyV0Dau0, dcaxyV0Dau1, dcaxyPiFromCasc,
                       dcazV0Dau0, dcazV0Dau1, dcazPiFromCasc,
-                      dcaCascDau, dcaV0Dau, dcaOmegacDau, hfFlag, isPiAmb);
+                      dcaCascDau, dcaV0Dau, dcaOmegacDau, hfFlag, isPiAmb,
+                      cpaV0_toPV, cpaCasc_toPV, cpaV0_fromLF, cpaCasc_fromLF);
 
         } // loop over pions
       }   // loop over cascades
@@ -483,6 +492,8 @@ struct HfCandidateCreatorToXiPiMc {
                  aod::BigTracksMC const& tracks,
                  aod::McParticles const& particlesMC)
   {
+    float ptCharmBarGen = -999.;
+
     int indexRec = -1;
     int8_t sign = -9;
     int8_t flag = -9;
@@ -589,11 +600,13 @@ struct HfCandidateCreatorToXiPiMc {
       debugGenCharmBar = 0;
       debugGenXi = 0;
       debugGenLambda = 0;
+      ptCharmBarGen = -999.;
       // origin = 0;
       if (matchOmegacMc) {
         //  Omegac → Xi pi
         if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeOmegac0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
           debugGenCharmBar = 1;
+          ptCharmBarGen = particle.pt();
           // Match Xi -> lambda pi
           auto cascMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
           // Printf("Checking cascade → lambda pi");
@@ -612,6 +625,7 @@ struct HfCandidateCreatorToXiPiMc {
         //  Xic → Xi pi
         if (RecoDecay::isMatchedMCGen(particlesMC, particle, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
           debugGenCharmBar = 1;
+          ptCharmBarGen = particle.pt();
           // Match Xi -> lambda pi
           auto cascMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
           // Printf("Checking cascade → lambda pi");
@@ -628,7 +642,7 @@ struct HfCandidateCreatorToXiPiMc {
       }
 
       // rowMCMatchGen(flag, origin);
-      rowMCMatchGen(flag, debugGenCharmBar, debugGenXi, debugGenLambda);
+      rowMCMatchGen(flag, debugGenCharmBar, debugGenXi, debugGenLambda, ptCharmBarGen);
     }
   } // close process
   PROCESS_SWITCH(HfCandidateCreatorToXiPiMc, processMc, "Process MC", false);

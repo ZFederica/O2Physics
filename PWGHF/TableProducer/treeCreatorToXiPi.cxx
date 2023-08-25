@@ -135,6 +135,11 @@ DECLARE_SOA_COLUMN(TofNSigmaPiFromOmega, tofNSigmaPiFromOmega, float);
 DECLARE_SOA_COLUMN(TofNSigmaPiFromCasc, tofNSigmaPiFromCasc, float);
 DECLARE_SOA_COLUMN(TofNSigmaPiFromLambda, tofNSigmaPiFromLambda, float);
 DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
+// cosPA checks
+DECLARE_SOA_COLUMN(CosPACascToPV, cosPACascToPV, double);
+DECLARE_SOA_COLUMN(CosPAV0ToPV, cosPAV0ToPV, double);
+DECLARE_SOA_COLUMN(CosPACascFromLF, cosPACascFromLF, float);
+DECLARE_SOA_COLUMN(CosPAV0FromLF, cosPAV0FromLF, float);
 
 } // namespace full
 
@@ -168,7 +173,8 @@ DECLARE_SOA_TABLE(HfToXiPiFull, "AOD", "HFTOXIPIFULL",
                   full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassOmegac, full::ResultSelections, full::PidTpcInfoStored, full::PidTofInfoStored,
                   full::TpcNSigmaPiFromOmega, full::TpcNSigmaPiFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
                   full::TofNSigmaPiFromOmega, full::TofNSigmaPiFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
-                  full::FlagMcMatchRec, full::DebugMcRec, full::IsPiAmb);
+                  full::FlagMcMatchRec, full::DebugMcRec, full::IsPiAmb,
+                  full::CosPAV0ToPV , full::CosPACascToPV , full::CosPAV0FromLF, full::CosPACascFromLF);
 
 DECLARE_SOA_TABLE(HfToXiPiEvents, "AOD", "HFTOXIPIEVENTS",
                   collision::NumContrib,
@@ -303,7 +309,11 @@ struct HfTreeCreatorToXiPi {
       candidate.tofNSigmaPrFromLambda(),
       flagMc,
       debugMc,
-      candidate.isPiAmb());
+      candidate.isPiAmb(),
+      candidate.cosPAV0ToPV(),
+      candidate.cosPACascToPV(),
+      candidate.cosPAV0FromLF(),
+      candidate.cosPACascFromLF());
   }
 
   void processData(aod::Collisions const& collisions,

@@ -1540,6 +1540,11 @@ DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, float);
 DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, float);
 DECLARE_SOA_COLUMN(DcaOmegacDau, dcaOmegacDau, float);
 DECLARE_SOA_COLUMN(IsPiAmb, isPiAmb, bool);
+// cosPA checks
+DECLARE_SOA_COLUMN(CosPACascToPV, cosPACascToPV, double);
+DECLARE_SOA_COLUMN(CosPAV0ToPV, cosPAV0ToPV, double);
+DECLARE_SOA_COLUMN(CosPACascFromLF, cosPACascFromLF, float);
+DECLARE_SOA_COLUMN(CosPAV0FromLF, cosPAV0FromLF, float);
 
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
@@ -1548,6 +1553,7 @@ DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
 DECLARE_SOA_COLUMN(DebugGenCharmBar, debugGenCharmBar, int8_t);
 DECLARE_SOA_COLUMN(DebugGenXi, debugGennXi, int8_t);
 DECLARE_SOA_COLUMN(DebugGenLambda, debugGenLambda, int8_t);
+DECLARE_SOA_COLUMN(PtCharmBarGen, ptCharmBarGen, float);
 
 // mapping of decay types
 enum DecayType { DecayToXiPi = 0,
@@ -1587,7 +1593,8 @@ DECLARE_SOA_TABLE(HfCandToXiPi, "AOD", "HFCANDTOXIPI",
                   hf_cand_toxipi::EtaOmegac, hf_cand_toxipi::EtaCascade, hf_cand_toxipi::EtaV0,
                   hf_cand_toxipi::DcaXYToPvV0Dau0, hf_cand_toxipi::DcaXYToPvV0Dau1, hf_cand_toxipi::DcaXYToPvCascDau,
                   hf_cand_toxipi::DcaZToPvV0Dau0, hf_cand_toxipi::DcaZToPvV0Dau1, hf_cand_toxipi::DcaZToPvCascDau,
-                  hf_cand_toxipi::DcaCascDau, hf_cand_toxipi::DcaV0Dau, hf_cand_toxipi::DcaOmegacDau, hf_track_index::HFflag, hf_cand_toxipi::IsPiAmb);
+                  hf_cand_toxipi::DcaCascDau, hf_cand_toxipi::DcaV0Dau, hf_cand_toxipi::DcaOmegacDau, hf_track_index::HFflag, hf_cand_toxipi::IsPiAmb,
+                  hf_cand_toxipi::CosPAV0ToPV, hf_cand_toxipi::CosPACascToPV, hf_cand_toxipi::CosPAV0FromLF, hf_cand_toxipi::CosPACascFromLF);
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfToXiPiMCRec, "AOD", "HFTOXIPIMCREC", //!
@@ -1596,7 +1603,7 @@ DECLARE_SOA_TABLE(HfToXiPiMCRec, "AOD", "HFTOXIPIMCREC", //!
 
 // table with results of generator level MC matching
 DECLARE_SOA_TABLE(HfToXiPiMCGen, "AOD", "HFTOXIPIMCGEN", //!
-                  hf_cand_toxipi::FlagMcMatchGen, hf_cand_toxipi::DebugGenCharmBar, hf_cand_toxipi::DebugGenXi, hf_cand_toxipi::DebugGenLambda);
+                  hf_cand_toxipi::FlagMcMatchGen, hf_cand_toxipi::DebugGenCharmBar, hf_cand_toxipi::DebugGenXi, hf_cand_toxipi::DebugGenLambda, hf_cand_toxipi::PtCharmBarGen);
 
 namespace hf_cand_toxipi_ambtrk
 {
