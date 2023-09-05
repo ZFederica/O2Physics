@@ -70,7 +70,7 @@ o2physics_add_dpl_workflow(candidate-creator-sigmac0plusplus
 
 o2physics_add_dpl_workflow(candidate-creator-to-xi-pi
                     SOURCES candidateCreatorToXiPi.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-creator-xicc

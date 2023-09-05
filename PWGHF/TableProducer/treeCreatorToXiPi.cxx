@@ -46,6 +46,9 @@ DECLARE_SOA_COLUMN(YDecayVtxV0, yDecayVtxV0, float);
 DECLARE_SOA_COLUMN(ZDecayVtxV0, zDecayVtxV0, float);
 DECLARE_SOA_COLUMN(SignDecay, signDecay, int8_t); // sign of pi <- xi
 DECLARE_SOA_COLUMN(Chi2PCAOmegac, chi2PcaOmegac, float);
+DECLARE_SOA_COLUMN(Chi2KFV0, chi2KFV0, float);
+DECLARE_SOA_COLUMN(Chi2KFCasc, chi2KFCasc, float);
+DECLARE_SOA_COLUMN(Chi2KFCharmBaryon, chi2KFCharmBaryon, float);
 DECLARE_SOA_COLUMN(CovVtxOmegacXX, covVtxOmegacXX, float);
 DECLARE_SOA_COLUMN(CovVtxOmegacYY, covVtxOmegacYY, float);
 DECLARE_SOA_COLUMN(CovVtxOmegacZZ, covVtxOmegacZZ, float);
@@ -169,6 +172,34 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::TofNSigmaPiFromOmega, full::TofNSigmaPiFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
                   full::FlagMcMatchRec, full::DebugMcRec);
 
+DECLARE_SOA_TABLE(HfToXiPiKfFulls, "AOD", "HFTOXIPIKFFULL",
+                  full::CollisionId, full::XPv, full::YPv, full::ZPv, collision::NumContrib,
+                  full::XDecayVtxOmegac, full::YDecayVtxOmegac, full::ZDecayVtxOmegac,
+                  full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
+                  full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
+                  full::SignDecay,
+                  full::Chi2KFV0, full::Chi2KFCasc, full::Chi2KFCharmBaryon,
+                  full::PxOmegac, full::PyOmegac, full::PzOmegac,
+                  full::PxCasc, full::PyCasc, full::PzCasc,
+                  full::PxPrimaryPi, full::PyPrimaryPi, full::PzPrimaryPi,
+                  full::PxLambda, full::PyLambda, full::PzLambda,
+                  full::PxPiFromCasc, full::PyPiFromCasc, full::PzPiFromCasc,
+                  full::PxPosV0Dau, full::PyPosV0Dau, full::PzPosV0Dau,
+                  full::PxNegV0Dau, full::PyNegV0Dau, full::PzNegV0Dau,
+                  full::EtaV0PosDau, full::EtaV0NegDau, full::EtaPiFromCasc, full::EtaPiFromOme,
+                  full::EtaOmegac, full::EtaCascade, full::EtaV0,
+                  full::InvMassLambda, full::InvMassCascade, full::InvMassOmegac,
+                  full::DcaOmegacDau,
+                  full::CosPAV0, full::CosPAOmegac, full::CosPACasc, full::CosPAXYV0, full::CosPAXYOmegac, full::CosPAXYCasc,
+                  full::CTauOmegac, full::CTauCascade, full::CTauV0, full::CTauXic,
+                  full::DcaXYToPvV0Dau0, full::DcaXYToPvV0Dau1, full::DcaXYToPvCascDau, full::ImpactParPrimaryPiXY, full::ImpactParCascXY,
+                  full::DcaZToPvV0Dau0, full::DcaZToPvV0Dau1, full::DcaZToPvCascDau, full::ImpactParPrimaryPiZ, full::ImpactParCascZ,
+                  full::StatusPidLambda, full::StatusPidCascade, full::StatusPidOmegac,
+                  full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassOmegac, full::ResultSelections, full::PidTpcInfoStored, full::PidTofInfoStored,
+                  full::TpcNSigmaPiFromOmega, full::TpcNSigmaPiFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
+                  full::TofNSigmaPiFromOmega, full::TofNSigmaPiFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
+                  full::FlagMcMatchRec, full::DebugMcRec);
+
 DECLARE_SOA_TABLE(HfToXiPiEvents, "AOD", "HFTOXIPIEVENT",
                   collision::NumContrib,
                   collision::PosX,
@@ -180,6 +211,7 @@ DECLARE_SOA_TABLE(HfToXiPiEvents, "AOD", "HFTOXIPIEVENT",
 struct HfTreeCreatorToXiPi {
 
   Produces<o2::aod::HfToXiPiFulls> rowCandidateFull;
+  Produces<o2::aod::HfToXiPiKfFulls> rowCandidateFullKf;
   Produces<o2::aod::HfToXiPiEvents> rowCandidateEvents;
 
   void init(InitContext const&)
@@ -304,8 +336,103 @@ struct HfTreeCreatorToXiPi {
       debugMc);
   }
 
-  void processData(aod::Collisions const& collisions,
-                   soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
+  template <typename T>
+  void fillCandidateKf(const T& candidate, int8_t flagMc, int8_t debugMc)
+  {
+    rowCandidateFullKf(
+      candidate.collisionId(),
+      candidate.xPv(),
+      candidate.yPv(),
+      candidate.zPv(),
+      candidate.collision().numContrib(),
+      candidate.xDecayVtxOmegac(),
+      candidate.yDecayVtxOmegac(),
+      candidate.zDecayVtxOmegac(),
+      candidate.xDecayVtxCascade(),
+      candidate.yDecayVtxCascade(),
+      candidate.zDecayVtxCascade(),
+      candidate.xDecayVtxV0(),
+      candidate.yDecayVtxV0(),
+      candidate.zDecayVtxV0(),
+      candidate.signDecay(),
+      candidate.chi2KFV0(),
+      candidate.chi2KFCasc(),
+      candidate.chi2KFCharmBaryon(),
+      candidate.pxOmegac(),
+      candidate.pyOmegac(),
+      candidate.pzOmegac(),
+      candidate.pxCasc(),
+      candidate.pyCasc(),
+      candidate.pzCasc(),
+      candidate.pxPrimaryPi(),
+      candidate.pyPrimaryPi(),
+      candidate.pzPrimaryPi(),
+      candidate.pxLambda(),
+      candidate.pyLambda(),
+      candidate.pzLambda(),
+      candidate.pxPiFromCasc(),
+      candidate.pyPiFromCasc(),
+      candidate.pzPiFromCasc(),
+      candidate.pxPosV0Dau(),
+      candidate.pyPosV0Dau(),
+      candidate.pzPosV0Dau(),
+      candidate.pxNegV0Dau(),
+      candidate.pyNegV0Dau(),
+      candidate.pzNegV0Dau(),
+      candidate.etaV0PosDau(),
+      candidate.etaV0NegDau(),
+      candidate.etaPiFromCasc(),
+      candidate.etaPiFromOme(),
+      candidate.etaOmegac(),
+      candidate.etaCascade(),
+      candidate.etaV0(),
+      candidate.invMassLambda(),
+      candidate.invMassCascade(),
+      candidate.invMassOmegac(),
+      candidate.dcaOmegacDau(),
+      candidate.cosPAV0(),
+      candidate.cosPAOmegac(),
+      candidate.cosPACasc(),
+      candidate.cosPAXYV0(),
+      candidate.cosPAXYOmegac(),
+      candidate.cosPAXYCasc(),
+      candidate.ctauOmegac(),
+      candidate.ctauCascade(),
+      candidate.ctauV0(),
+      candidate.ctauXic(),
+      candidate.dcaXYToPvV0Dau0(),
+      candidate.dcaXYToPvV0Dau1(),
+      candidate.dcaXYToPvCascDau(),
+      candidate.impactParPrimaryPiXY(),
+      candidate.impactParCascXY(),
+      candidate.dcaZToPvV0Dau0(),
+      candidate.dcaZToPvV0Dau1(),
+      candidate.dcaZToPvCascDau(),
+      candidate.impactParPrimaryPiZ(),
+      candidate.impactParCascZ(),
+      candidate.statusPidLambda(),
+      candidate.statusPidCascade(),
+      candidate.statusPidOmegac(),
+      candidate.statusInvMassLambda(),
+      candidate.statusInvMassCascade(),
+      candidate.statusInvMassOmegac(),
+      candidate.resultSelections(),
+      candidate.pidTpcInfoStored(),
+      candidate.pidTofInfoStored(),
+      candidate.tpcNSigmaPiFromOmega(),
+      candidate.tpcNSigmaPiFromCasc(),
+      candidate.tpcNSigmaPiFromLambda(),
+      candidate.tpcNSigmaPrFromLambda(),
+      candidate.tofNSigmaPiFromOmega(),
+      candidate.tofNSigmaPiFromCasc(),
+      candidate.tofNSigmaPiFromLambda(),
+      candidate.tofNSigmaPrFromLambda(),
+      flagMc,
+      debugMc);
+  }
+
+  void processDataDca(aod::Collisions const& collisions,
+                      soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
 
     // Filling event properties
@@ -320,10 +447,28 @@ struct HfTreeCreatorToXiPi {
       fillCandidate(candidate, -7, -7);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processData, "Process data tree writer", true);
+  PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataDca, "Process data (DCA fitter) tree writer", true);
 
-  void processMc(aod::Collisions const& collisions,
-                 soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
+    void processDataKf(aod::Collisions const& collisions,
+                       soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPi> const& candidates)
+  {
+
+    // Filling event properties
+    rowCandidateEvents.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent(collision);
+    }
+
+    // Filling candidate properties
+    rowCandidateFullKf.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillCandidateKf(candidate, -7, -7);
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorToXiPi, processDataKf, "Process data (KF reconstruction) tree writer", false);
+
+  void processMcDca(aod::Collisions const& collisions,
+                    soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
   {
 
     // Filling event properties
@@ -338,7 +483,25 @@ struct HfTreeCreatorToXiPi {
       fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec());
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorToXiPi, processMc, "Process MC tree writer", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcDca, "Process MC (DCA fitter) tree writer", false);
+
+  void processMcKf(aod::Collisions const& collisions,
+                   soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPi, aod::HfToXiPiMCRec> const& candidates)
+  {
+
+    // Filling event properties
+    rowCandidateEvents.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent(collision);
+    }
+
+    // Filling candidate properties
+    rowCandidateFullKf.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillCandidateKf(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec());
+    }
+  }
+  PROCESS_SWITCH(HfTreeCreatorToXiPi, processMcKf, "Process MC (KF reconstruction) tree writer", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
