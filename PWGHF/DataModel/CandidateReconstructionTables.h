@@ -1613,11 +1613,22 @@ DECLARE_SOA_COLUMN(P, p, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(NrCollAss, nrCollAss, int);
+
+DECLARE_SOA_COLUMN(HasZeroCollAssoc, hasZeroCollAssoc, bool);
+DECLARE_SOA_COLUMN(HasOneCollAssoc, hasOneCollAssoc, bool);
+DECLARE_SOA_COLUMN(HasMultipleCollAssoc, hasMultipleCollAssoc, bool);
+DECLARE_SOA_COLUMN(IsPvContrib, isPvContrib, bool);
+DECLARE_SOA_COLUMN(IsSameCollIdx, isSameCollIdx, bool);
 } // end of namespace hf_cand_toxipi_ambtrk
+
 // declare dedicated table
 DECLARE_SOA_TABLE(HfToXiPiAmbTrk, "AOD", "HFTOXIPIAMBTRK",
                   hf_cand_toxipi_ambtrk::PT, hf_cand_toxipi_ambtrk::PZ, hf_cand_toxipi_ambtrk::P,
                   hf_cand_toxipi_ambtrk::Phi, hf_cand_toxipi_ambtrk::Eta, hf_cand_toxipi_ambtrk::NrCollAss);
+
+DECLARE_SOA_TABLE(HfToXiPiAmbExt, "AOD", "HFTOXIPIAMBEXT",
+                  hf_cand_toxipi_ambtrk::HasZeroCollAssoc, hf_cand_toxipi_ambtrk::HasOneCollAssoc, hf_cand_toxipi_ambtrk::HasMultipleCollAssoc,
+                  hf_cand_toxipi_ambtrk::IsPvContrib, hf_cand_toxipi_ambtrk::IsSameCollIdx);
 
 
 // specific chic candidate properties

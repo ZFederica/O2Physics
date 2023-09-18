@@ -452,7 +452,9 @@ struct HfCandidateCreatorToXiPi {
 struct HfCandidateCreatorToXiPiAmbTrk {
 
   Produces<aod::HfToXiPiAmbTrk> rowAmbTrk;
+  Produces<aod::HfToXiPiAmbExt> rowAmbTrkExtra;
   using MyTracksAmbInfo = soa::Join<aod::Tracks, aod::TrackCompColls>;
+  using MyBigTracksMC = soa::Join<BigTracks, McTrackLabels, aod::TrackCompColls>; //BigTracksMC defined in header
 
   void init(InitContext const&) {}
 
@@ -469,6 +471,95 @@ struct HfCandidateCreatorToXiPiAmbTrk {
     }
   }
   PROCESS_SWITCH(HfCandidateCreatorToXiPiAmbTrk, processDoAmbTrk, "Check on ambiguous tracks", false);
+
+  void processExtraChecks(MyBigTracksMC const& trks, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&){
+
+    int pdgCodeXic0 = pdg::Code::kXiCZero;    // 4132
+    int pdgCodeXiMinus = kXiMinus;            // 3312
+    int pdgCodeLambda = kLambda0;             // 3122
+    int pdgCodePiPlus = kPiPlus;              // 211
+    int pdgCodePiMinus = kPiMinus;            // -211
+    int pdgCodeProton = kProton;              // 2212
+
+    // for pi <- charm
+    bool hasZeroCollAssoc = false;
+    bool hasOneCollAssoc = false;
+    bool hasMultipleCollAssoc = false;
+    bool isPvContrib = false;
+    bool isSameCollIdx = false; // do pi<-charm and xi have the same timestamp?
+
+    int8_t sign = -9;
+    int8_t flag = -9;
+    int8_t debugGenCharmBar = 0;
+    int8_t debugGenXi = 0;
+    int8_t debugGenLambda = 0;
+    int32_t collIdxCasc = -9999999;
+
+    for (const auto& trk : trks) { //loop over reconstructed tracks
+
+      hasZeroCollAssoc = false;
+      hasOneCollAssoc = false;
+      hasMultipleCollAssoc = false;
+      isPvContrib = false;
+      isSameCollIdx = false;
+
+      auto particleFromDecay = trk.mcParticle_as<aod::McParticles>(); //cast to generation level info (pi from charm)
+      if(std::abs(particleFromDecay.pdgCode()) != std::abs(pdgCodePiPlus)){
+        continue;
+      }
+
+      sign = -9;
+      flag = -9;
+      debugGenCharmBar = 0;
+      debugGenXi = 0;
+      debugGenLambda = 0;
+      collIdxCasc = -9999999;
+
+      for(auto& particleMother : particleFromDecay.mothers_as<aod::McParticles>()){ //loop over mothers of particleFromDecay (gen level info)
+
+      if (RecoDecay::isMatchedMCGen(particlesMC, particleMother, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
+          debugGenCharmBar = 1;
+          // Match Xi -> lambda pi
+          auto cascMC = particlesMC.rawIteratorAt(particleMother.daughtersIds().front());
+          // Printf("Checking cascade → lambda pi");
+          if (RecoDecay::isMatchedMCGen(particlesMC, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
+            debugGenXi = 1;
+            // lambda -> p pi
+            auto v0MC = particlesMC.rawIteratorAt(cascMC.daughtersIds().front());
+            if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
+              debugGenLambda = 1;
+              flag = sign * (1 << DecayType::XiczeroToXiPi);
+              collIdxCasc = cascMC.mcCollisionId();
+            }
+          }
+        }
+      }
+
+      if(std:abs(flag)==4){ // I am dealing with a xic0 decaying properly
+        if(trk.compatibleCollIds().size() == 0){
+          hasZeroCollAssoc=true;
+        } else if (trk.compatibleCollIds().size() == 1) {
+          hasOneCollAssoc=true;
+        } else if(trk.compatibleCollIds().size()>1) {
+          hasMultipleCollAssoc=true;
+        }
+        if(trk.isPVContributor()){
+          isPvContrib=true;
+        }
+        for(const auto& collIdx : trk.compatibleCollIds()){
+          if(collIdx == collIdxCasc){
+            isSameCollIdx=true;
+          }
+        }
+      }
+
+      rowAmbTrkExtra(hasZeroCollAssoc, hasOneCollAssoc, hasMultipleCollAssoc, isPvContrib, isSameCollIdx);
+
+    }
+
+  }
+  PROCESS_SWITCH(HfCandidateCreatorToXiPiAmbTrk, processExtraChecks, "Do extra checks on ambiguous tracks", false);
+
 }; // end of struct
 
 
@@ -588,6 +679,8 @@ struct HfCandidateCreatorToXiPiMc {
       if (debug == 2 || debug == 3) {
         LOGF(info, "WARNING: Charm baryon decays in the expected final state but the condition on the intermediate states are not fulfilled");
       }
+
+
       rowMCMatchRec(flag, debug);
 
     } // close loop over candidates
