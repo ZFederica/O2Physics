@@ -115,9 +115,12 @@ namespace hf_sel_candidate_ds
 {
 DECLARE_SOA_COLUMN(IsSelDsToKKPi, isSelDsToKKPi, int); //!
 DECLARE_SOA_COLUMN(IsSelDsToPiKK, isSelDsToPiKK, int); //!
+DECLARE_SOA_COLUMN(MlProbDsToKKPi, mlProbDsToKKPi, std::vector<float>); //!
 } // namespace hf_sel_candidate_ds
 DECLARE_SOA_TABLE(HfSelDsToKKPi, "AOD", "HFSELDS", //!
                   hf_sel_candidate_ds::IsSelDsToKKPi, hf_sel_candidate_ds::IsSelDsToPiKK);
+DECLARE_SOA_TABLE(HfMlDsToKKPi, "AOD", "HFMLDS", //!
+                  hf_sel_candidate_ds::MlProbDsToKKPi);
 
 namespace hf_sel_candidate_lc
 {
@@ -224,7 +227,7 @@ bool selectionTopol(const T1& candB0, const T2& cuts, const T3& binsPt)
 
   // B0 mass cut
   if (std::abs(o2::aod::hf_cand_b0::invMassB0ToDPi(candB0) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kB0)) > cuts->get(pTBin, "m")) {
-    // Printf("B0 topol selection failed at mass diff check");
+    // LOGF(debug, "B0 topol selection failed at mass diff check");
     return false;
   }
 

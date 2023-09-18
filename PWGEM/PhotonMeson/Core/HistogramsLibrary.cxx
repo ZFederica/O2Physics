@@ -93,6 +93,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
     list->Add(new TH2F("hKFChi2vsZ", "KF chi2 vs. recalc. conversion point in Z;Z (cm);KF chi2/NDF", 500, -250.0f, 250.0f, 100, 0.f, 100.0f));
     list->Add(new TH1F("hNgamma", "Number of #gamma candidates per collision", 101, -0.5f, 100.5f));
     list->Add(new TH2F("hV0R_minTrackX", "V0R vs. trackiu x;R_{xy} of V0 (cm);min TrackIU X (cm)", 200, 0.0f, 200.0f, 400, 0.f, 200.0f));
+    list->Add(new TH1F("hDiffZ", "difference of track iu z between e^{+} and e^{-};diff track iu Z (cm)", 400, -20.f, 20.f));
 
     if (TString(subGroup) == "mc") {
       list->Add(new TH1F("hPt_Photon_Primary", "pT;p_{T} (GeV/c)", 1000, 0.0f, 10));                                                  // for MC efficiency
@@ -232,7 +233,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       const double xmin[ndim] = {0.0, 0.0, 0, 0, -2, 0.0, 0, 0, -2};
       const double xmax[ndim] = {0.4, 10.0, 200, TMath::TwoPi(), +2, 10.0, 200, TMath::TwoPi(), +2};
 
-      THnSparseF* hs_conv_point_same = new THnSparseF("hs_conv_point_same", "hs_conv_point;m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma1} (GeV/c);R_{xy1} (cm);#varphi1 (rad.);#eta1;p_{T,#gamma2} (GeV/c);R_{xy2} (cm);#varphi2 (rad.);#eta2;", ndim, nbins, xmin, xmax);
+      THnSparseF* hs_conv_point_same = new THnSparseF("hs_conv_point_same", "hs_conv_point;m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma}^{tag} (GeV/c);R_{xy}^{tag} (cm);#varphi^{tag} (rad.);#eta^{tag};p_{T,#gamma}^{probe} (GeV/c);R_{xy}^{probe} (cm);#varphi^{probe} (rad.);#eta^{probe};", ndim, nbins, xmin, xmax);
       hs_conv_point_same->SetBinEdges(1, pt);
       hs_conv_point_same->SetBinEdges(2, rxy);
       hs_conv_point_same->SetBinEdges(5, pt);
@@ -240,7 +241,7 @@ void o2::aod::emphotonhistograms::DefineHistograms(THashList* list, const char* 
       hs_conv_point_same->Sumw2();
       list->Add(hs_conv_point_same);
 
-      THnSparseF* hs_conv_point_mix = new THnSparseF("hs_conv_point_mix", "hs_conv_point;m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma1} (GeV/c);R_{xy1} (cm);#varphi1 (rad.);#eta1;p_{T,#gamma2} (GeV/c);R_{xy2} (cm);#varphi2 (rad.);#eta2;", ndim, nbins, xmin, xmax);
+      THnSparseF* hs_conv_point_mix = new THnSparseF("hs_conv_point_mix", "hs_conv_point;m_{#gamma#gamma} (GeV/c^{2});p_{T,#gamma}^{tag} (GeV/c);R_{xy}^{tag} (cm);#varphi^{tag} (rad.);#eta^{tag};p_{T,#gamma}^{probe} (GeV/c);R_{xy}^{probe} (cm);#varphi^{probe} (rad.);#eta^{probe};", ndim, nbins, xmin, xmax);
       hs_conv_point_mix->SetBinEdges(1, pt);
       hs_conv_point_mix->SetBinEdges(2, rxy);
       hs_conv_point_mix->SetBinEdges(5, pt);
