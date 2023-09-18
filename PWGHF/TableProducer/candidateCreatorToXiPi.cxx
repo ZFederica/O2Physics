@@ -454,7 +454,7 @@ struct HfCandidateCreatorToXiPiAmbTrk {
   Produces<aod::HfToXiPiAmbTrk> rowAmbTrk;
   Produces<aod::HfToXiPiAmbExt> rowAmbTrkExtra;
   using MyTracksAmbInfo = soa::Join<aod::Tracks, aod::TrackCompColls>;
-  using MyBigTracksMC = soa::Join<BigTracks, McTrackLabels, aod::TrackCompColls>; //BigTracksMC defined in header
+  using MyBigTracksMC = soa::Join<TracksWCovDcaExtra, McTrackLabels, aod::TrackCompColls>; //BigTracksMC defined in header
 
   void init(InitContext const&) {}
 
@@ -535,7 +535,7 @@ struct HfCandidateCreatorToXiPiAmbTrk {
         }
       }
 
-      if(std:abs(flag)==4){ // I am dealing with a xic0 decaying properly
+      if(std::abs(flag)==4){ // I am dealing with a xic0 decaying properly
         if(trk.compatibleCollIds().size() == 0){
           hasZeroCollAssoc=true;
         } else if (trk.compatibleCollIds().size() == 1) {
@@ -692,9 +692,9 @@ struct HfCandidateCreatorToXiPiMc {
           debugGenCharmBar = 1;
           ptCharmBarGen = particle.pt();
           // Match Xi -> lambda pi
-          auto cascMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
+          auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
           // Printf("Checking cascade → lambda pi");
-          if (RecoDecay::isMatchedMCGen(particlesMC, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
             debugGenXi = 1;
             // Lambda -> p pi
             auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());
@@ -711,9 +711,9 @@ struct HfCandidateCreatorToXiPiMc {
           debugGenCharmBar = 1;
           ptCharmBarGen = particle.pt();
           // Match Xi -> lambda pi
-          auto cascMC = particlesMC.rawIteratorAt(particle.daughtersIds().front());
+          auto cascMC = mcParticles.rawIteratorAt(particle.daughtersIds().front());
           // Printf("Checking cascade → lambda pi");
-          if (RecoDecay::isMatchedMCGen(particlesMC, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
+          if (RecoDecay::isMatchedMCGen(mcParticles, cascMC, pdgCodeXiMinus, std::array{pdgCodeLambda, pdgCodePiMinus}, true)) {
             debugGenXi = 1;
             // Lambda -> p pi
             auto v0MC = mcParticles.rawIteratorAt(cascMC.daughtersIds().front());

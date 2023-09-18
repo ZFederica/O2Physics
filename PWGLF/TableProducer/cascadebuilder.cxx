@@ -820,14 +820,11 @@ struct cascadeBuilder {
       nCand = fitter.process(lV0Track, lBachelorTrack);
     } catch (...) {
       registry.fill(HIST("hCaughtExceptions"), 0.5f);
-      hExcCounterDCAFitter->Fill(1);
       LOG(error) << "Exception caught in DCA fitter process call!";
       return false;
     }
     if (nCand == 0)
       return false;
-
-    hExcCounterDCAFitter->Fill(0);
 
     lV0Track = fitter.getTrack(0);
     lBachelorTrack = fitter.getTrack(1);
