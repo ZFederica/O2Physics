@@ -15,6 +15,8 @@
 #ifndef PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_
 #define PWGHF_DATAMODEL_CANDIDATESELECTIONTABLES_H_
 
+#include <vector>
+
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelectorPID.h"
 
@@ -28,6 +30,7 @@ enum SelectionStep {
   RecoSkims = 0,
   RecoTopol,
   RecoPID,
+  RecoMl,
   NSelectionSteps
 };
 
@@ -39,6 +42,7 @@ DECLARE_SOA_COLUMN(IsRecoHfFlag, isRecoHfFlag, int); //!
 DECLARE_SOA_COLUMN(IsRecoTopol, isRecoTopol, int);   //!
 DECLARE_SOA_COLUMN(IsRecoCand, isRecoCand, int);     //!
 DECLARE_SOA_COLUMN(IsRecoPid, isRecoPid, int);
+DECLARE_SOA_COLUMN(MlProbD0, mlProbD0, std::vector<float>); //!
 } // namespace hf_sel_candidate_d0
 DECLARE_SOA_TABLE(HfSelD0, "AOD", "HFSELD0", //!
                   hf_sel_candidate_d0::IsSelD0,
@@ -47,6 +51,8 @@ DECLARE_SOA_TABLE(HfSelD0, "AOD", "HFSELD0", //!
                   hf_sel_candidate_d0::IsRecoTopol,
                   hf_sel_candidate_d0::IsRecoCand,
                   hf_sel_candidate_d0::IsRecoPid);
+DECLARE_SOA_TABLE(HfMlD0, "AOD", "HFMLD0", //!
+                  hf_sel_candidate_d0::MlProbD0);
 
 namespace hf_sel_candidate_d0_parametrized_pid
 {
@@ -98,17 +104,23 @@ DECLARE_SOA_TABLE(HfSelD0Alice3Forward, "AOD", "HFSELD0A3F", //!
 namespace hf_sel_candidate_dplus
 {
 DECLARE_SOA_COLUMN(IsSelDplusToPiKPi, isSelDplusToPiKPi, int); //!
+DECLARE_SOA_COLUMN(MlProbDplusToPiKPi, mlProbDplusToPiKPi, std::vector<float>); //!
 } // namespace hf_sel_candidate_dplus
 DECLARE_SOA_TABLE(HfSelDplusToPiKPi, "AOD", "HFSELDPLUS", //!
                   hf_sel_candidate_dplus::IsSelDplusToPiKPi);
+DECLARE_SOA_TABLE(HfMlDplusToPiKPi, "AOD", "HFMLDPLUS", //!
+                  hf_sel_candidate_dplus::MlProbDplusToPiKPi);
 
 namespace hf_sel_candidate_ds
 {
 DECLARE_SOA_COLUMN(IsSelDsToKKPi, isSelDsToKKPi, int); //!
 DECLARE_SOA_COLUMN(IsSelDsToPiKK, isSelDsToPiKK, int); //!
+DECLARE_SOA_COLUMN(MlProbDsToKKPi, mlProbDsToKKPi, std::vector<float>); //!
 } // namespace hf_sel_candidate_ds
 DECLARE_SOA_TABLE(HfSelDsToKKPi, "AOD", "HFSELDS", //!
                   hf_sel_candidate_ds::IsSelDsToKKPi, hf_sel_candidate_ds::IsSelDsToPiKK);
+DECLARE_SOA_TABLE(HfMlDsToKKPi, "AOD", "HFMLDS", //!
+                  hf_sel_candidate_ds::MlProbDsToKKPi);
 
 namespace hf_sel_candidate_lc
 {
@@ -215,7 +227,7 @@ bool selectionTopol(const T1& candB0, const T2& cuts, const T3& binsPt)
 
   // B0 mass cut
   if (std::abs(o2::aod::hf_cand_b0::invMassB0ToDPi(candB0) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kB0)) > cuts->get(pTBin, "m")) {
-    // Printf("B0 topol selection failed at mass diff check");
+    // LOGF(debug, "B0 topol selection failed at mass diff check");
     return false;
   }
 
@@ -271,15 +283,15 @@ bool selectionTopol(const T1& candB0, const T2& cuts, const T3& binsPt)
 
 /// Apply PID selection
 /// \param pidTrackPi PID status of trackPi (prong1 of B0 candidate)
-/// \param acceptPIDNotApplicable switch to accept Status::PIDNotApplicable
+/// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
 /// \return true if prong1 of B0 candidate passes all selections
 template <typename T1 = int, typename T2 = bool>
 bool selectionPID(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
 {
-  if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Status::PIDAccepted) {
+  if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
     return false;
   }
-  if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Status::PIDRejected) {
+  if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Rejected) {
     return false;
   }
 
@@ -290,9 +302,170 @@ bool selectionPID(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
 DECLARE_SOA_TABLE(HfSelB0ToDPi, "AOD", "HFSELB0", //!
                   hf_sel_candidate_b0::IsSelB0ToDPi);
 
+namespace hf_sel_candidate_bs
+{
+DECLARE_SOA_COLUMN(IsSelBsToDsPi, isSelBsToDsPi, int); //!
+
+/// Apply topological cuts as defined in SelectorCuts.h
+/// \param candBs Bs candidate
+/// \param cuts Bs candidate selections
+/// \param binsPt pT bin limits
+/// \return true if candidate passes all selections
+template <typename T1, typename T2, typename T3>
+bool selectionTopol(const T1& candBs, const T2& cuts, const T3& binsPt)
+{
+  auto ptCandBs = candBs.pt();
+  auto ptDs = RecoDecay::pt(candBs.pxProng0(), candBs.pyProng0());
+  auto ptPi = RecoDecay::pt(candBs.pxProng1(), candBs.pyProng1());
+
+  int pTBin = findBin(binsPt, ptCandBs);
+  if (pTBin == -1) {
+    return false;
+  }
+
+  // Bs mass cut
+  if (std::abs(o2::aod::hf_cand_bs::invMassBsToDsPi(candBs) - RecoDecay::getMassPDG(o2::analysis::pdg::Code::kBS)) > cuts->get(pTBin, "m")) {
+    return false;
+  }
+
+  // pion pt
+  if (ptPi < cuts->get(pTBin, "pT Pi")) {
+    return false;
+  }
+
+  // Ds pt
+  if (ptDs < cuts->get(pTBin, "pT Ds")) {
+    return false;
+  }
+
+  // Bs Decay length
+  if (candBs.decayLength() < cuts->get(pTBin, "Bs decLen")) {
+    return false;
+  }
+
+  // Bs Decay length XY
+  if (candBs.decayLengthXY() < cuts->get(pTBin, "Bs decLenXY")) {
+    return false;
+  }
+
+  // Bs chi2PCA cut
+  if (candBs.chi2PCA() > cuts->get(pTBin, "Chi2PCA")) {
+    return false;
+  }
+
+  // Bs CPA cut
+  if (candBs.cpa() < cuts->get(pTBin, "CPA")) {
+    return false;
+  }
+
+  // d0 of pi
+  if (std::abs(candBs.impactParameter1()) < cuts->get(pTBin, "d0 Pi")) {
+    return false;
+  }
+
+  // d0 of Ds
+  if (std::abs(candBs.impactParameter0()) < cuts->get(pTBin, "d0 Ds")) {
+    return false;
+  }
+
+  // d0(Ds)xd0(pi)
+  if (candBs.impactParameterProduct() > cuts->get(pTBin, "Imp. Par. Product")) {
+    return false;
+  }
+
+  return true;
+}
+
+/// Apply PID selection
+/// \param pidTrackPi PID status of trackPi (prong1 of Bs candidate)
+/// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
+/// \return true if prong1 of Bs candidate passes all selections
+template <typename T1 = int, typename T2 = bool>
+bool selectionPID(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
+{
+  if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
+    return false;
+  }
+  if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Rejected) {
+    return false;
+  }
+
+  return true;
+}
+
+} // namespace hf_sel_candidate_bs
+DECLARE_SOA_TABLE(HfSelBsToDsPi, "AOD", "HFSELBS", //!
+                  hf_sel_candidate_bs::IsSelBsToDsPi);
+
 namespace hf_sel_candidate_bplus
 {
 DECLARE_SOA_COLUMN(IsSelBplusToD0Pi, isSelBplusToD0Pi, int); //!
+// Apply topological cuts as defined in SelectorCuts.h
+/// \param candBp B+ candidate
+/// \param cuts B+ candidate selection per pT bin"
+/// \param binsPt pT bin limits
+/// \return true if candidate passes all selections
+template <typename T1, typename T2, typename T3>
+bool selectionTopol(const T1& candBp, const T2& cuts, const T3& binsPt)
+{
+  auto ptcandBp = candBp.pt();
+  auto ptPi = RecoDecay::pt(candBp.pxProng1(), candBp.pyProng1());
+
+  int pTBin = findBin(binsPt, ptcandBp);
+  if (pTBin == -1) {
+    return false;
+  }
+
+  // B+ mass cut
+  if (std::abs(invMassBplusToD0Pi(candBp) - RecoDecay::getMassPDG(521)) > cuts->get(pTBin, "m")) {
+    return false;
+  }
+
+  // pion pt
+  if (ptPi < cuts->get(pTBin, "pT Pi")) {
+    return false;
+  }
+
+  // d0(D0)xd0(pi)
+  if (candBp.impactParameterProduct() > cuts->get(pTBin, "Imp. Par. Product")) {
+    return false;
+  }
+
+  // B Decay length
+  if (candBp.decayLength() < cuts->get(pTBin, "B decLen")) {
+    return false;
+  }
+
+  // B Decay length XY
+  if (candBp.decayLengthXY() < cuts->get(pTBin, "B decLenXY")) {
+    return false;
+  }
+
+  // B+ CPA cut
+  if (candBp.cpa() < cuts->get(pTBin, "CPA")) {
+    return false;
+  }
+
+  return true;
+}
+
+/// Apply PID selection
+/// \param pidTrackPi PID status of trackPi (prong1 of B+ candidate)
+/// \param acceptPIDNotApplicable switch to accept Status::NotApplicable
+/// \return true if prong1 of B+ candidate passes all selections
+template <typename T1 = int, typename T2 = bool>
+bool selectionPID(const T1& pidTrackPi, const T2& acceptPIDNotApplicable)
+{
+  if (!acceptPIDNotApplicable && pidTrackPi != TrackSelectorPID::Accepted) {
+    return false;
+  }
+  if (acceptPIDNotApplicable && pidTrackPi == TrackSelectorPID::Rejected) {
+    return false;
+  }
+
+  return true;
+}
+
 } // namespace hf_sel_candidate_bplus
 DECLARE_SOA_TABLE(HfSelBplusToD0Pi, "AOD", "HFSELBPLUS", //!
                   hf_sel_candidate_bplus::IsSelBplusToD0Pi);

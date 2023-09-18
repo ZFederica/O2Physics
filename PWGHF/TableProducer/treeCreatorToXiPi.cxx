@@ -143,7 +143,7 @@ DECLARE_SOA_COLUMN(CosPAV0FromLF, cosPAV0FromLF, float);
 
 } // namespace full
 
-DECLARE_SOA_TABLE(HfToXiPiFull, "AOD", "HFTOXIPIFULL",
+DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::CollisionId, full::XPv, full::YPv, full::ZPv, collision::NumContrib,
                   full::XDecayVtxOmegac, full::YDecayVtxOmegac, full::ZDecayVtxOmegac,
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
@@ -176,7 +176,7 @@ DECLARE_SOA_TABLE(HfToXiPiFull, "AOD", "HFTOXIPIFULL",
                   full::FlagMcMatchRec, full::DebugMcRec, full::IsPiAmb,
                   full::CosPAV0ToPV , full::CosPACascToPV , full::CosPAV0FromLF, full::CosPACascFromLF);
 
-DECLARE_SOA_TABLE(HfToXiPiEvents, "AOD", "HFTOXIPIEVENTS",
+DECLARE_SOA_TABLE(HfToXiPiEvents, "AOD", "HFTOXIPIEVENT",
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
@@ -186,7 +186,7 @@ DECLARE_SOA_TABLE(HfToXiPiEvents, "AOD", "HFTOXIPIEVENTS",
 /// Writes the full information in an output TTree
 struct HfTreeCreatorToXiPi {
 
-  Produces<o2::aod::HfToXiPiFull> rowCandidateFull;
+  Produces<o2::aod::HfToXiPiFulls> rowCandidateFull;
   Produces<o2::aod::HfToXiPiEvents> rowCandidateEvents;
 
   void init(InitContext const&)
@@ -322,13 +322,13 @@ struct HfTreeCreatorToXiPi {
 
     // Filling event properties
     rowCandidateEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision);
     }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       fillCandidate(candidate, -7, -7);
     }
   }
@@ -340,13 +340,13 @@ struct HfTreeCreatorToXiPi {
 
     // Filling event properties
     rowCandidateEvents.reserve(collisions.size());
-    for (auto const& collision : collisions) {
+    for (const auto& collision : collisions) {
       fillEvent(collision);
     }
 
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
-    for (auto const& candidate : candidates) {
+    for (const auto& candidate : candidates) {
       fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec());
     }
   }

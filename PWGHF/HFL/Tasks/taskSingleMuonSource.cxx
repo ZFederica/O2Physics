@@ -14,7 +14,6 @@
 // \author Maolin Zhang <maolin.zhang@cern.ch>, CCNU
 
 #include <TDatabasePDG.h>
-#include <TMath.h>
 #include <TPDGCode.h>
 #include <TString.h>
 
@@ -92,12 +91,10 @@ struct HfTaskSingleMuonSource {
     AxisSpec axisChi2{500, 0., 100., "#chi^{2} of MCH-MFT matching"};
     AxisSpec axisPt{200, 0., 100., "#it{p}_{T,reco} (GeV/#it{c})"};
 
-    HistogramConfigSpec h2PtDCA{HistType::kTH2F, {axisPt, axisDCA}};
-    HistogramConfigSpec h2PtChi2{HistType::kTH2F, {axisPt, axisChi2}};
+    HistogramConfigSpec h3PtDCAChi2{HistType::kTH3F, {axisPt, axisDCA, axisChi2}};
 
-    for (auto const& src : muonSources) {
-      registry.add(Form("h2%sPtDCA", src.Data()), "", h2PtDCA);
-      registry.add(Form("h2%sPtChi2", src.Data()), "", h2PtChi2);
+    for (const auto& src : muonSources) {
+      registry.add(Form("h3%sPtDCAChi2", src.Data()), "", h3PtDCAChi2);
     }
   }
 
@@ -147,7 +144,7 @@ struct HfTaskSingleMuonSource {
         continue;
       }
       // compute the flavor of constituent quark
-      const int flv(pdgRem / TMath::Power(10, static_cast<int>(TMath::Log10(pdgRem))));
+      const int flv(pdgRem / std::pow(10, static_cast<int>(std::log10(pdgRem))));
       if (flv > 6) {
         // no more than 6 flavors
         continue;
@@ -235,30 +232,25 @@ struct HfTaskSingleMuonSource {
     singleMuonSource(pt, dca, mask);
 
     if (isBeautyDecayMu(mask)) {
-      registry.fill(HIST("h2BeautyDecayMuPtDCA"), pt, dca);
-      registry.fill(HIST("h2BeautyDecayMuPtChi2"), pt, chi2);
+      registry.fill(HIST("h3BeautyDecayMuPtDCAChi2"), pt, dca, chi2);
     } else if (isNonpromptCharmMu(mask)) {
-      registry.fill(HIST("h2NonpromptCharmMuPtDCA"), pt, dca);
-      registry.fill(HIST("h2NonpromptCharmMuPtChi2"), pt, chi2);
+      registry.fill(HIST("h3NonpromptCharmMuPtDCAChi2"), pt, dca, chi2);
     } else if (isPromptCharmMu(mask)) {
-      registry.fill(HIST("h2PromptCharmMuPtDCA"), pt, dca);
-      registry.fill(HIST("h2PromptCharmMuPtChi2"), pt, chi2);
+      registry.fill(HIST("h3PromptCharmMuPtDCAChi2"), pt, dca, chi2);
     } else if (isLightDecayMu(mask)) {
-      registry.fill(HIST("h2LightDecayMuPtDCA"), pt, dca);
-      registry.fill(HIST("h2LightDecayMuPtChi2"), pt, chi2);
+      registry.fill(HIST("h3LightDecayMuPtDCAChi2"), pt, dca, chi2);
     } else if (isSecondaryMu(mask)) {
-      registry.fill(HIST("h2SecondaryMuPtDCA"), pt, dca);
-      registry.fill(HIST("h2SecondaryMuPtChi2"), pt, chi2);
+      registry.fill(HIST("h3SecondaryMuPtDCAChi2"), pt, dca, chi2);
     } else if (isHadron(mask)) {
-      registry.fill(HIST("h2HadronPtDCA"), pt, dca);
-      registry.fill(HIST("h2HadronPtChi2"), pt, chi2);
+      registry.fill(HIST("h3HadronPtDCAChi2"), pt, dca, chi2);
     } else if (isUnidentified(mask)) {
-      registry.fill(HIST("h2UnidentifiedPtDCA"), pt, dca);
-      registry.fill(HIST("h2UnidentifiedPtChi2"), pt, chi2);
+      registry.fill(HIST("h3UnidentifiedPtDCAChi2"), pt, dca, chi2);
     }
   }
 
-  void process(MyCollisions::iterator const& collision, McMuons const& muons, aod::McParticles const&)
+  void process(MyCollisions::iterator const& collision,
+               McMuons const& muons,
+               aod::McParticles const&)
   {
     // event selections
     if (!collision.sel8()) {
