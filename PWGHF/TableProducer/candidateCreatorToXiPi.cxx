@@ -93,6 +93,7 @@ struct HfCandidateCreatorToXiPi {
 
   // KF
   Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "KF Construct Method"};
+  Configurable<bool> doDcaFitterFirst{"doDcaFitterFirst", true, "Run DCA fitter to reconstruct charm baryon before KF reconstruction"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
@@ -622,6 +623,10 @@ struct HfCandidateCreatorToXiPi {
           trackCasc.setPID(o2::track::PID::XiMinus);
 
           // - - - - - - - DCA fitter minimization with material corrections - - - - - - -
+
+        float dcaOmegacDau = -999; // variable which is computed only by the DCAFitter
+
+        if(doDcaFitterFirst){
           int nVtxFromFitterOmegac = df.process(trackCasc, trackParVarPi);
           if (nVtxFromFitterOmegac == 0) {
             continue;
@@ -632,11 +637,13 @@ struct HfCandidateCreatorToXiPi {
           }
 
           // classical daughters DCA - not KF updated
-          float dcaOmegacDau = std::sqrt(df.getChi2AtPCACandidate());
+          dcaOmegacDau = std::sqrt(df.getChi2AtPCACandidate());
 
           // get tracks after the fitting
           trackCasc = df.getTrack(0);
           trackParVarPi = df.getTrack(1);
+
+        }
 
           // - - - - - - - KF reconstruction - - - - - - -
           KFParticle kfpCasc;
