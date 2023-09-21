@@ -1662,6 +1662,7 @@ DECLARE_SOA_COLUMN(HasOneCollAssoc, hasOneCollAssoc, bool);
 DECLARE_SOA_COLUMN(HasMultipleCollAssoc, hasMultipleCollAssoc, bool);
 DECLARE_SOA_COLUMN(IsPvContrib, isPvContrib, bool);
 DECLARE_SOA_COLUMN(IsSameCollIdx, isSameCollIdx, bool);
+//DECLARE_SOA_COLUMN(CounterUnassParticles, counterUnassParticles, int64_t);
 } // end of namespace hf_cand_toxipi_ambtrk
 
 // declare dedicated table
@@ -1671,7 +1672,7 @@ DECLARE_SOA_TABLE(HfToXiPiAmbTrk, "AOD", "HFTOXIPIAMBTRK",
 
 DECLARE_SOA_TABLE(HfToXiPiAmbExt, "AOD", "HFTOXIPIAMBEXT",
                   hf_cand_toxipi_ambtrk::HasZeroCollAssoc, hf_cand_toxipi_ambtrk::HasOneCollAssoc, hf_cand_toxipi_ambtrk::HasMultipleCollAssoc,
-                  hf_cand_toxipi_ambtrk::IsPvContrib, hf_cand_toxipi_ambtrk::IsSameCollIdx);
+                  hf_cand_toxipi_ambtrk::IsPvContrib, hf_cand_toxipi_ambtrk::IsSameCollIdx); //hf_cand_toxipi_ambtrk::CounterUnassParticles);
 
 
 // specific chic candidate properties

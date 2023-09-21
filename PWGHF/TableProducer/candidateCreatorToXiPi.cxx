@@ -494,11 +494,12 @@ struct HfCandidateCreatorToXiPiAmbTrk {
     int8_t debugGenXi = 0;
     int8_t debugGenLambda = 0;
     int32_t collIdxCasc = -9999999;
+    //bool counterUnassParticles = false;
 
     for (const auto& trk : trks) { //loop over reconstructed tracks
 
       if (!trk.has_mcParticle()) {
-        LOGF(info, "This trk does not have the corresponding mcParticle!!!");
+        //counterUnassParticles=true;
         continue;
       }
 
@@ -509,7 +510,6 @@ struct HfCandidateCreatorToXiPiAmbTrk {
       isSameCollIdx = false;
 
       auto particleFromDecay = trk.mcParticle_as<aod::McParticles>(); //cast to generation level info (pi from charm)
-      LOGF(info, "Cast from trk to mcParticle done!!!");
       if(std::abs(particleFromDecay.pdgCode()) != std::abs(pdgCodePiPlus)){
         continue;
       }
@@ -557,9 +557,10 @@ struct HfCandidateCreatorToXiPiAmbTrk {
             isSameCollIdx=true;
           }
         }
+        rowAmbTrkExtra(hasZeroCollAssoc, hasOneCollAssoc, hasMultipleCollAssoc, isPvContrib, isSameCollIdx);
       }
 
-      rowAmbTrkExtra(hasZeroCollAssoc, hasOneCollAssoc, hasMultipleCollAssoc, isPvContrib, isSameCollIdx);
+      //rowAmbTrkExtra(hasZeroCollAssoc, hasOneCollAssoc, hasMultipleCollAssoc, isPvContrib, isSameCollIdx, counterUnassParticles);
 
     }
 
