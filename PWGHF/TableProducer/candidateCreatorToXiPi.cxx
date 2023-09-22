@@ -627,10 +627,16 @@ struct HfCandidateCreatorToXiPi {
         float dcaOmegacDau = -999; // variable which is computed only by the DCAFitter
 
         if(doDcaFitterFirst){
-          int nVtxFromFitterOmegac = df.process(trackCasc, trackParVarPi);
-          if (nVtxFromFitterOmegac == 0) {
-            continue;
+          try {
+              int nVtxFromFitterOmegac = df.process(trackCasc, trackParVarPi);
+              if (nVtxFromFitterOmegac == 0) {
+                continue;
+              }
+          } catch (...) {
+              LOG(error) << "Exception caught in charm baryon DCA fitter process call!";
+              return;
           }
+
           df.propagateTracksToVertex();
           if (!df.isPropagateTracksToVertexDone()) {
             continue;
