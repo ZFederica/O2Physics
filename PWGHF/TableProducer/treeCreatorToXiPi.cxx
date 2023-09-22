@@ -46,15 +46,6 @@ DECLARE_SOA_COLUMN(YDecayVtxV0, yDecayVtxV0, float);
 DECLARE_SOA_COLUMN(ZDecayVtxV0, zDecayVtxV0, float);
 DECLARE_SOA_COLUMN(SignDecay, signDecay, int8_t); // sign of pi <- xi
 DECLARE_SOA_COLUMN(Chi2PCAOmegac, chi2PcaOmegac, float);
-DECLARE_SOA_COLUMN(CovVtxOmegacXX, covVtxOmegacXX, float);
-DECLARE_SOA_COLUMN(CovVtxOmegacYY, covVtxOmegacYY, float);
-DECLARE_SOA_COLUMN(CovVtxOmegacZZ, covVtxOmegacZZ, float);
-DECLARE_SOA_COLUMN(CovVtxCascadeXX, covVtxCascadeXX, float);
-DECLARE_SOA_COLUMN(CovVtxCascadeYY, covVtxCascadeYY, float);
-DECLARE_SOA_COLUMN(CovVtxCascadeZZ, covVtxCascadeZZ, float);
-DECLARE_SOA_COLUMN(CovVtxV0XX, covVtxV0XX, float);
-DECLARE_SOA_COLUMN(CovVtxV0YY, covVtxV0YY, float);
-DECLARE_SOA_COLUMN(CovVtxV0ZZ, covVtxV0ZZ, float);
 DECLARE_SOA_COLUMN(PxOmegac, pxOmegac, float);
 DECLARE_SOA_COLUMN(PyOmegac, pyOmegac, float);
 DECLARE_SOA_COLUMN(PzOmegac, pzOmegac, float);
@@ -80,10 +71,6 @@ DECLARE_SOA_COLUMN(ImpactParCascXY, impactParCascXY, float);
 DECLARE_SOA_COLUMN(ImpactParPrimaryPiXY, impactParPrimaryPiXY, float);
 DECLARE_SOA_COLUMN(ImpactParCascZ, impactParCascZ, float);
 DECLARE_SOA_COLUMN(ImpactParPrimaryPiZ, impactParPrimaryPiZ, float);
-DECLARE_SOA_COLUMN(ImpactParV0XY, impactParV0XY, float);
-DECLARE_SOA_COLUMN(ImpactParV0Z, impactParV0Z, float);
-DECLARE_SOA_COLUMN(ImpactParOmegacXY, impactParOmegacXY, float);
-DECLARE_SOA_COLUMN(ImpactParOmegacZ, impactParOmegacZ, float);
 DECLARE_SOA_COLUMN(InvMassLambda, invMassLambda, double);
 DECLARE_SOA_COLUMN(InvMassCascade, invMassCascade, double);
 DECLARE_SOA_COLUMN(InvMassOmegac, invMassOmegac, double);
@@ -110,10 +97,8 @@ DECLARE_SOA_COLUMN(DcaXYToPvCascDau, dcaXYToPvCascDau, float);
 DECLARE_SOA_COLUMN(DcaZToPvV0Dau0, dcaZToPvV0Dau0, float);
 DECLARE_SOA_COLUMN(DcaZToPvV0Dau1, dcaZToPvV0Dau1, float);
 DECLARE_SOA_COLUMN(DcaZToPvCascDau, dcaZToPvCascDau, float);
-DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, float);
-DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, float);
 DECLARE_SOA_COLUMN(DcaOmegacDau, dcaOmegacDau, float);
-DECLARE_SOA_COLUMN(IsPiAmb, isPiAmb, bool);
+
 // from creator - MC
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
@@ -135,11 +120,7 @@ DECLARE_SOA_COLUMN(TofNSigmaPiFromOmega, tofNSigmaPiFromOmega, float);
 DECLARE_SOA_COLUMN(TofNSigmaPiFromCasc, tofNSigmaPiFromCasc, float);
 DECLARE_SOA_COLUMN(TofNSigmaPiFromLambda, tofNSigmaPiFromLambda, float);
 DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
-// cosPA checks
-DECLARE_SOA_COLUMN(CosPACascToPV, cosPACascToPV, double);
-DECLARE_SOA_COLUMN(CosPAV0ToPV, cosPAV0ToPV, double);
-DECLARE_SOA_COLUMN(CosPACascFromLF, cosPACascFromLF, float);
-DECLARE_SOA_COLUMN(CosPAV0FromLF, cosPAV0FromLF, float);
+
 
 } // namespace full
 
@@ -149,9 +130,6 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
                   full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
                   full::SignDecay, full::Chi2PCAOmegac,
-                  full::CovVtxOmegacXX, full::CovVtxOmegacYY, full::CovVtxOmegacZZ,
-                  full::CovVtxCascadeXX, full::CovVtxCascadeYY, full::CovVtxCascadeZZ,
-                  full::CovVtxV0XX, full::CovVtxV0YY, full::CovVtxV0ZZ,
                   full::PxOmegac, full::PyOmegac, full::PzOmegac,
                   full::PxCasc, full::PyCasc, full::PzCasc,
                   full::PxPrimaryPi, full::PyPrimaryPi, full::PzPrimaryPi,
@@ -159,8 +137,8 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::PxPiFromCasc, full::PyPiFromCasc, full::PzPiFromCasc,
                   full::PxPosV0Dau, full::PyPosV0Dau, full::PzPosV0Dau,
                   full::PxNegV0Dau, full::PyNegV0Dau, full::PzNegV0Dau,
-                  full::ImpactParCascXY, full::ImpactParPrimaryPiXY, full::ImpactParV0XY, full::ImpactParOmegacXY,
-                  full::ImpactParCascZ, full::ImpactParPrimaryPiZ, full::ImpactParV0Z, full::ImpactParOmegacZ,
+                  full::ImpactParCascXY, full::ImpactParPrimaryPiXY,
+                  full::ImpactParCascZ, full::ImpactParPrimaryPiZ,
                   full::InvMassLambda, full::InvMassCascade, full::InvMassOmegac,
                   full::CosPAV0, full::CosPAOmegac, full::CosPACasc, full::CosPAXYV0, full::CosPAXYOmegac, full::CosPAXYCasc,
                   full::CTauOmegac, full::CTauCascade, full::CTauV0, full::CTauXic,
@@ -168,13 +146,12 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::EtaOmegac, full::EtaCascade, full::EtaV0,
                   full::DcaXYToPvV0Dau0, full::DcaXYToPvV0Dau1, full::DcaXYToPvCascDau,
                   full::DcaZToPvV0Dau0, full::DcaZToPvV0Dau1, full::DcaZToPvCascDau,
-                  full::DcaCascDau, full::DcaV0Dau, full::DcaOmegacDau,
+                  full::DcaOmegacDau,
                   full::StatusPidLambda, full::StatusPidCascade, full::StatusPidOmegac,
                   full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassOmegac, full::ResultSelections, full::PidTpcInfoStored, full::PidTofInfoStored,
                   full::TpcNSigmaPiFromOmega, full::TpcNSigmaPiFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
                   full::TofNSigmaPiFromOmega, full::TofNSigmaPiFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
-                  full::FlagMcMatchRec, full::DebugMcRec, full::IsPiAmb,
-                  full::CosPAV0ToPV , full::CosPACascToPV , full::CosPAV0FromLF, full::CosPACascFromLF);
+                  full::FlagMcMatchRec, full::DebugMcRec);
 
 DECLARE_SOA_TABLE(HfToXiPiEvents, "AOD", "HFTOXIPIEVENT",
                   collision::NumContrib,
@@ -223,15 +200,6 @@ struct HfTreeCreatorToXiPi {
       candidate.zDecayVtxV0(),
       candidate.signDecay(),
       candidate.chi2PcaOmegac(),
-      candidate.covVtxOmegac0(),
-      candidate.covVtxOmegac3(),
-      candidate.covVtxOmegac5(),
-      candidate.covVtxCasc0(),
-      candidate.covVtxCasc3(),
-      candidate.covVtxCasc5(),
-      candidate.covVtxV00(),
-      candidate.covVtxV03(),
-      candidate.covVtxV05(),
       candidate.pxOmegac(),
       candidate.pyOmegac(),
       candidate.pzOmegac(),
@@ -255,12 +223,8 @@ struct HfTreeCreatorToXiPi {
       candidate.pzNegV0Dau(),
       candidate.impactParCascXY(),
       candidate.impactParPrimaryPiXY(),
-      candidate.impactParV0XY(),
-      candidate.impactParOmegacXY(),
       candidate.impactParCascZ(),
       candidate.impactParPrimaryPiZ(),
-      candidate.impactParV0Z(),
-      candidate.impactParOmegacZ(),
       candidate.invMassLambda(),
       candidate.invMassCascade(),
       candidate.invMassOmegac(),
@@ -287,8 +251,6 @@ struct HfTreeCreatorToXiPi {
       candidate.dcaZToPvV0Dau0(),
       candidate.dcaZToPvV0Dau1(),
       candidate.dcaZToPvCascDau(),
-      candidate.dcaCascDau(),
-      candidate.dcaV0Dau(),
       candidate.dcaOmegacDau(),
       candidate.statusPidLambda(),
       candidate.statusPidCascade(),
@@ -308,12 +270,7 @@ struct HfTreeCreatorToXiPi {
       candidate.tofNSigmaPiFromLambda(),
       candidate.tofNSigmaPrFromLambda(),
       flagMc,
-      debugMc,
-      candidate.isPiAmb(),
-      candidate.cosPAV0ToPV(),
-      candidate.cosPACascToPV(),
-      candidate.cosPAV0FromLF(),
-      candidate.cosPACascFromLF());
+      debugMc);
   }
 
   void processData(aod::Collisions const& collisions,

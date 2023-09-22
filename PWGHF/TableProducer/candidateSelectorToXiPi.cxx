@@ -269,20 +269,6 @@ struct HfCandidateSelectorToXiPi {
         registry.fill(HIST("hSelCosPAV0"), 1);
       }
 
-      // cascade and v0 daughters dca cut (LF cut)
-      if (candidate.dcaCascDau() > dcaCascDauMax) {
-        resultSelections = false;
-        registry.fill(HIST("hSelDCACascDau"), 0);
-      } else {
-        registry.fill(HIST("hSelDCACascDau"), 1);
-      }
-
-      if (candidate.dcaV0Dau() > dcaV0DauMax) {
-        resultSelections = false;
-        registry.fill(HIST("hSelDCAV0Dau"), 0);
-      } else {
-        registry.fill(HIST("hSelDCAV0Dau"), 1);
-      }
 
       // dca omegac daughters cut
       if (candidate.dcaOmegacDau() > dcaOmegacDauMax) {
