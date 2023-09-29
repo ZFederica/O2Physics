@@ -453,8 +453,9 @@ struct HfCandidateCreatorToXiPiAmbTrk {
 
   Produces<aod::HfToXiPiAmbTrk> rowAmbTrk;
   Produces<aod::HfToXiPiAmbExt> rowAmbTrkExtra;
-  using MyTracksAmbInfo = soa::Join<aod::Tracks, aod::TrackCompColls>;
-  using MyBigTracksMC = soa::Join<TracksWCovDcaExtra, McTrackLabels, aod::TrackCompColls>; //BigTracksMC defined in header
+  //using MyTracksAmbInfo = soa::Join<aod::Tracks, aod::TrackCompColls>;
+  using MyTracksAmbInfo = soa::Join<TracksWCovDcaExtra, aod::TrackCompColls, aod::TrackSelection>;
+  using MyBigTracksMC = soa::Join<TracksWCovDcaExtra, McTrackLabels, aod::TrackCompColls, aod::TrackSelection>; //BigTracksMC defined in header
 
   void init(InitContext const&) {}
 
@@ -467,7 +468,7 @@ struct HfCandidateCreatorToXiPiAmbTrk {
   void processDoAmbTrk(MyTracksAmbInfo const& trks)
   {
     for (const auto& trk : trks) {
-      rowAmbTrk(trk.pt(), trk.pz(), trk.p(), trk.phi(), trk.eta(), trk.compatibleCollIds().size());
+      rowAmbTrk(trk.pt(), trk.pz(), trk.p(), trk.phi(), trk.eta(), trk.compatibleCollIds().size(), trk.isPVContributor(), trk.isGlobalTrack());
     }
   }
   PROCESS_SWITCH(HfCandidateCreatorToXiPiAmbTrk, processDoAmbTrk, "Check on ambiguous tracks", false);
@@ -552,12 +553,8 @@ struct HfCandidateCreatorToXiPiAmbTrk {
         if(trk.isPVContributor()){
           isPvContrib=true;
         }
-        for(const auto& collIdx : trk.compatibleCollIds()){
-          if(collIdx == collIdxCasc){
-            isSameCollIdx=true;
-          }
-        }
-        rowAmbTrkExtra(hasZeroCollAssoc, hasOneCollAssoc, hasMultipleCollAssoc, isPvContrib, isSameCollIdx);
+
+        rowAmbTrkExtra(hasZeroCollAssoc, hasOneCollAssoc, hasMultipleCollAssoc, isPvContrib, trk.isGlobalTrack());
       }
 
       //rowAmbTrkExtra(hasZeroCollAssoc, hasOneCollAssoc, hasMultipleCollAssoc, isPvContrib, isSameCollIdx, counterUnassParticles);
