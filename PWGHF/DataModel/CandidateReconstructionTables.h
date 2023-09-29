@@ -1663,7 +1663,18 @@ DECLARE_SOA_COLUMN(HasZeroCollAssoc, hasZeroCollAssoc, bool);
 DECLARE_SOA_COLUMN(HasOneCollAssoc, hasOneCollAssoc, bool);
 DECLARE_SOA_COLUMN(HasMultipleCollAssoc, hasMultipleCollAssoc, bool);
 DECLARE_SOA_COLUMN(IsPvContrib, isPvContrib, bool);
-DECLARE_SOA_COLUMN(IsPionGlobTrack, isPionGlobTrack, bool);
+DECLARE_SOA_COLUMN(IsPionGlobTrackWoDca, isPionGlobTrackWoDca, bool);
+DECLARE_SOA_COLUMN(TrackTypePion, trackTypePion, uint8_t);
+DECLARE_SOA_COLUMN(TPCCrossedRows,  tpcCrossedRows, int);
+DECLARE_SOA_COLUMN(TPCCrossedRowsOverCls, tpcCrossedRowsOverCls, float);
+DECLARE_SOA_COLUMN(TPCChi2Cls, tpcChi2Cls, float);
+DECLARE_SOA_COLUMN(HasTPCPion, hasTPCPion, bool);
+DECLARE_SOA_COLUMN(ITSChi2Cls, itsChi2Cls, float);
+DECLARE_SOA_COLUMN(HasITSPion, hasITSPion, bool);
+DECLARE_SOA_COLUMN(ITSInnBNCls, itsInnBNCls, uint8_t);
+DECLARE_SOA_COLUMN(PtPion, ptPion, float);
+DECLARE_SOA_COLUMN(EtaPion, etaPion, float);
+
 
 //DECLARE_SOA_COLUMN(CounterUnassParticles, counterUnassParticles, int64_t);
 } // end of namespace hf_cand_toxipi_ambtrk
@@ -1676,7 +1687,10 @@ DECLARE_SOA_TABLE(HfToXiPiAmbTrk, "AOD", "HFTOXIPIAMBTRK",
 
 DECLARE_SOA_TABLE(HfToXiPiAmbExt, "AOD", "HFTOXIPIAMBEXT",
                   hf_cand_toxipi_ambtrk::HasZeroCollAssoc, hf_cand_toxipi_ambtrk::HasOneCollAssoc, hf_cand_toxipi_ambtrk::HasMultipleCollAssoc,
-                  hf_cand_toxipi_ambtrk::IsPvContrib, hf_cand_toxipi_ambtrk::IsPionGlobTrack); //hf_cand_toxipi_ambtrk::CounterUnassParticles);
+                  hf_cand_toxipi_ambtrk::IsPvContrib, hf_cand_toxipi_ambtrk::IsPionGlobTrackWoDca,
+                  hf_cand_toxipi_ambtrk::TrackTypePion, hf_cand_toxipi_ambtrk::TPCCrossedRows, hf_cand_toxipi_ambtrk::TPCCrossedRowsOverCls, hf_cand_toxipi_ambtrk::TPCChi2Cls,
+                  hf_cand_toxipi_ambtrk::HasTPCPion, hf_cand_toxipi_ambtrk::ITSChi2Cls, hf_cand_toxipi_ambtrk::HasITSPion, hf_cand_toxipi_ambtrk::ITSInnBNCls,
+                  hf_cand_toxipi_ambtrk::PtPion, hf_cand_toxipi_ambtrk::EtaPion); //hf_cand_toxipi_ambtrk::CounterUnassParticles);
 
 
 // specific chic candidate properties

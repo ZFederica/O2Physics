@@ -487,7 +487,6 @@ struct HfCandidateCreatorToXiPiAmbTrk {
     bool hasOneCollAssoc = false;
     bool hasMultipleCollAssoc = false;
     bool isPvContrib = false;
-    bool isSameCollIdx = false; // do pi<-charm and xi have the same timestamp?
 
     int8_t sign = -9;
     int8_t flag = -9;
@@ -508,7 +507,6 @@ struct HfCandidateCreatorToXiPiAmbTrk {
       hasOneCollAssoc = false;
       hasMultipleCollAssoc = false;
       isPvContrib = false;
-      isSameCollIdx = false;
 
       auto particleFromDecay = trk.mcParticle_as<aod::McParticles>(); //cast to generation level info (pi from charm)
       if(std::abs(particleFromDecay.pdgCode()) != std::abs(pdgCodePiPlus)){
@@ -554,10 +552,10 @@ struct HfCandidateCreatorToXiPiAmbTrk {
           isPvContrib=true;
         }
 
-        rowAmbTrkExtra(hasZeroCollAssoc, hasOneCollAssoc, hasMultipleCollAssoc, isPvContrib, trk.isGlobalTrack());
+        rowAmbTrkExtra(hasZeroCollAssoc, hasOneCollAssoc, hasMultipleCollAssoc, isPvContrib, trk.isGlobalTrackWoDCA(), trk.trackType(), trk.tpcNClsCrossedRows(), trk.tpcCrossedRowsOverFindableCls(), trk.tpcChi2NCl(), trk.hasTPC(), trk.itsChi2NCl(), trk.hasITS(), trk.itsNClsInnerBarrel(), trk.pt(), trk.eta());
       }
 
-      //rowAmbTrkExtra(hasZeroCollAssoc, hasOneCollAssoc, hasMultipleCollAssoc, isPvContrib, isSameCollIdx, counterUnassParticles);
+      //rowAmbTrkExtra(hasZeroCollAssoc, hasOneCollAssoc, hasMultipleCollAssoc, isPvContrib, counterUnassParticles);
 
     }
 
