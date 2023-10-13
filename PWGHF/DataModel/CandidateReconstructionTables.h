@@ -1658,6 +1658,12 @@ DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(NrCollAss, nrCollAss, int);
 DECLARE_SOA_COLUMN(PVContributor, pVContributor, bool);
 DECLARE_SOA_COLUMN(GlobTrack, globTrack, bool);
+DECLARE_SOA_COLUMN(TrkTime, trkTime, float);
+DECLARE_SOA_COLUMN(TrkTimeRes, trkTimeRes, float);
+DECLARE_SOA_COLUMN(BCAssoc, bcAssoc, int);
+DECLARE_SOA_COLUMN(CollTime, collTime, float);
+DECLARE_SOA_COLUMN(CollTimeRes, collTimeRes, float);
+DECLARE_SOA_COLUMN(HasCollAssoc, hasCollAssoc, bool);
 
 DECLARE_SOA_COLUMN(HasZeroCollAssoc, hasZeroCollAssoc, bool);
 DECLARE_SOA_COLUMN(HasOneCollAssoc, hasOneCollAssoc, bool);
@@ -1683,7 +1689,9 @@ DECLARE_SOA_COLUMN(EtaPion, etaPion, float);
 DECLARE_SOA_TABLE(HfToXiPiAmbTrk, "AOD", "HFTOXIPIAMBTRK",
                   hf_cand_toxipi_ambtrk::PT, hf_cand_toxipi_ambtrk::PZ, hf_cand_toxipi_ambtrk::P,
                   hf_cand_toxipi_ambtrk::Phi, hf_cand_toxipi_ambtrk::Eta, hf_cand_toxipi_ambtrk::NrCollAss,
-                  hf_cand_toxipi_ambtrk::PVContributor, hf_cand_toxipi_ambtrk::GlobTrack);
+                  hf_cand_toxipi_ambtrk::PVContributor, hf_cand_toxipi_ambtrk::GlobTrack,
+                  hf_cand_toxipi_ambtrk::TrkTime, hf_cand_toxipi_ambtrk::TrkTimeRes, hf_cand_toxipi_ambtrk::BCAssoc,
+                  hf_cand_toxipi_ambtrk::CollTime, hf_cand_toxipi_ambtrk::CollTimeRes, hf_cand_toxipi_ambtrk::HasCollAssoc);
 
 DECLARE_SOA_TABLE(HfToXiPiAmbExt, "AOD", "HFTOXIPIAMBEXT",
                   hf_cand_toxipi_ambtrk::HasZeroCollAssoc, hf_cand_toxipi_ambtrk::HasOneCollAssoc, hf_cand_toxipi_ambtrk::HasMultipleCollAssoc,

@@ -465,10 +465,14 @@ struct HfCandidateCreatorToXiPiAmbTrk {
   }
   PROCESS_SWITCH(HfCandidateCreatorToXiPiAmbTrk, processDoNoAmbTrk, "Do not check on ambiguous tracks", true);
 
-  void processDoAmbTrk(MyTracksAmbInfo const& trks)
+  void processDoAmbTrk(MyTracksAmbInfo const& trks, aod::Collisions const&)
   {
-    for (const auto& trk : trks) {
-      rowAmbTrk(trk.pt(), trk.pz(), trk.p(), trk.phi(), trk.eta(), trk.compatibleCollIds().size(), trk.isPVContributor(), trk.isGlobalTrack());
+    for (const auto& trk : trks) {//bc della coll di sui e pvcontr
+      if(!trk.has_collision()){
+        rowAmbTrk(trk.pt(), trk.pz(), trk.p(), trk.phi(), trk.eta(), trk.compatibleCollIds().size(), trk.isPVContributor(), trk.isGlobalTrack(), trk.trackTime(), trk.trackTimeRes(), -9999, -9999, -9999, trk.has_collision());
+      } else {
+        rowAmbTrk(trk.pt(), trk.pz(), trk.p(), trk.phi(), trk.eta(), trk.compatibleCollIds().size(), trk.isPVContributor(), trk.isGlobalTrack(), trk.trackTime(), trk.trackTimeRes(), trk.collision_as<aod::Collisions>().bcId(), trk.collision_as<aod::Collisions>().collisionTime(), trk.collision_as<aod::Collisions>().collisionTimeRes(), trk.has_collision());
+      }
     }
   }
   PROCESS_SWITCH(HfCandidateCreatorToXiPiAmbTrk, processDoAmbTrk, "Check on ambiguous tracks", false);
@@ -550,7 +554,7 @@ struct HfCandidateCreatorToXiPiAmbTrk {
         }
         if(trk.isPVContributor()){
           isPvContrib=true;
-        }
+        } 
 
         rowAmbTrkExtra(hasZeroCollAssoc, hasOneCollAssoc, hasMultipleCollAssoc, isPvContrib, trk.isGlobalTrackWoDCA(), trk.trackType(), trk.tpcNClsCrossedRows(), trk.tpcCrossedRowsOverFindableCls(), trk.tpcChi2NCl(), trk.hasTPC(), trk.itsChi2NCl(), trk.hasITS(), trk.itsNClsInnerBarrel(), trk.pt(), trk.eta());
       }
