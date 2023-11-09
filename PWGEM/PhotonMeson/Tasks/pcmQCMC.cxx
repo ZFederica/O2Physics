@@ -48,10 +48,15 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using std::array;
 
+using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedMCEventLabels>;
+using MyCollision = MyCollisions::iterator;
+
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation, aod::V0KFEMReducedEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
 struct PCMQCMC {
+  using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
+
   Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,qc,nocut", "Comma separated list of v0 photon cuts"};
   Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for generated particles"};
 
@@ -129,9 +134,8 @@ struct PCMQCMC {
     fOutputGen.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Generated")));
   }
 
-  Preslice<MyV0Photons> perCollision = aod::v0photon::emreducedeventId;
-  using MyMCV0Legs = soa::Join<aod::V0Legs, aod::EMMCParticleLabels>;
-  void processQCMC(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const&)
+  Preslice<MyV0Photons> perCollision = aod::v0photonkf::emreducedeventId;
+  void processQCMC(MyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const& v0legs, aod::EMMCParticles const& mcparticles, aod::EMReducedMCEvents const&)
   {
     THashList* list_ev = static_cast<THashList*>(fMainList->FindObject("Event"));
     THashList* list_v0 = static_cast<THashList*>(fMainList->FindObject("V0"));
@@ -169,9 +173,9 @@ struct PCMQCMC {
           auto elemc = ele.template emmcparticle_as<aod::EMMCParticles>();
 
           int photonid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 22, mcparticles);
-          if (photonid < 0) { // check swap, true electron is reconstructed as positron and vice versa.
-            photonid = FindCommonMotherFrom2Prongs(posmc, elemc, 11, -11, 22, mcparticles);
-          }
+          // if (photonid < 0) { // check swap, true electron is reconstructed as positron and vice versa.
+          //   photonid = FindCommonMotherFrom2Prongs(posmc, elemc, 11, -11, 22, mcparticles);
+          // }
 
           if (photonid < 0) {
             continue;
@@ -213,8 +217,13 @@ struct PCMQCMC {
             reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hConvPoint_diffZ_recalc"))->Fill(elemc.vz(), v0.recalculatedVtxZ() - elemc.vz());
 
             nv0++;
-            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hV0R_minTrackX"))->Fill(v0.recalculatedVtxR(), std::min(pos.x(), ele.x()));
-            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hDiffZ"))->Fill(pos.z() - ele.z());
+            float ptee = RecoDecay::sqrtSumOfSquares(pos.px() + ele.px(), pos.py() + ele.py());
+            float etaee = RecoDecay::eta(std::array{pos.px() + ele.px(), pos.py() + ele.py(), pos.pz() + ele.pz()});
+            float phiee = RecoDecay::phi(pos.px() + ele.px(), pos.py() + ele.py()) > 0.f ? RecoDecay::phi(pos.px() + ele.px(), pos.py() + ele.py()) : RecoDecay::phi(pos.px() + ele.px(), pos.py() + ele.py()) + TMath::TwoPi();
+            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hDiffPt"))->Fill(v0.pt(), ptee);
+            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hDiffEta"))->Fill(v0.pt(), etaee - v0.eta());
+            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hDiffPhi"))->Fill(v0.pt(), phiee - v0.phi());
+            reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hRelDiffPt"))->Fill(v0.pt(), (ptee - v0.pt()) / v0.pt());
             for (auto& leg : {pos, ele}) {
               o2::aod::emphotonhistograms::FillHistClass<EMHistType::kV0Leg>(list_v0leg_cut, "", leg);
             }
@@ -226,7 +235,7 @@ struct PCMQCMC {
   }     // end of process
 
   PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emreducedmceventId;
-  void processGen(soa::Join<aod::EMReducedEvents, aod::EMReducedMCEventLabels> const& collisions, aod::EMReducedMCEvents const&, aod::EMMCParticles const& mcparticles)
+  void processGen(MyCollisions const& collisions, aod::EMReducedMCEvents const&, aod::EMMCParticles const& mcparticles)
   {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
@@ -268,7 +277,7 @@ struct PCMQCMC {
     }
   }
 
-  void processDummy(aod::EMReducedEvents::iterator const& collision)
+  void processDummy(MyCollisions const& collisions)
   {
     // do nothing
   }

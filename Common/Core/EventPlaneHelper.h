@@ -63,7 +63,7 @@ class EventPlaneHelper
 
   // Method to get the Q-vector and sum of amplitudes for any channel in FIT, given
   // the detector and amplitude.
-  void SumQvectors(int det, int chno, float ampl, TComplex& Qvec, double& sum);
+  void SumQvectors(int det, int chno, float ampl, int nmod, TComplex& Qvec, double& sum);
 
   // Method to get the bin corresponding to a centrality percentile, according to the
   // centClasses[] array defined in Tasks/qVectorsQA.cxx.
@@ -73,6 +73,10 @@ class EventPlaneHelper
   // Method to apply the vector of correction constant passed as a configurable
   // to the calculated Q-vectors.
   void DoCorrections(float& qx, float& qy, const std::vector<float>& corrections);
+
+  void DoRecenter(float& qx, float& qy, float x0, float y0);
+  void DoTwist(float& qx, float& qy, float lp, float lm);
+  void DoRescale(float& qx, float& qy, float ap, float am);
 
   // Method to get the recentering correction on the Qx-Qy distribution.
   void GetCorrRecentering(const std::shared_ptr<TH2> histQ, float& meanX, float& meanY);
@@ -101,7 +105,7 @@ class EventPlaneHelper
   double mOffsetFV0rightX = 0.; // X-coordinate of the offset of FV0-A right.
   double mOffsetFV0rightY = 0.; // Y-coordinate of the offset of FV0-A right.
 
-  ClassDefNV(EventPlaneHelper, 1)
+  ClassDefNV(EventPlaneHelper, 2)
 };
 
 #endif // COMMON_CORE_EVENTPLANEHELPER_H_

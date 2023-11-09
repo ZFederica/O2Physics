@@ -83,7 +83,7 @@ double EventPlaneHelper::GetPhiFT0(int chno)
   return TMath::ATan2(chPos.Y() + offsetY, chPos.X() + offsetX);
 }
 
-void EventPlaneHelper::SumQvectors(int det, int chno, float ampl, TComplex& Qvec, double& sum)
+void EventPlaneHelper::SumQvectors(int det, int chno, float ampl, int nmod, TComplex& Qvec, double& sum)
 {
   /* Calculate the complex Q-vector for the provided detector and channel number,
     before adding it to the total Q-vector given as argument. */
@@ -107,7 +107,7 @@ void EventPlaneHelper::SumQvectors(int det, int chno, float ampl, TComplex& Qvec
     printf("Error on phi. Skip\n");
     return;
   } // TODO: ensure proper safety check.
-  Qvec += TComplex(ampl * TMath::Cos(2. * phi), ampl * TMath::Sin(2. * phi));
+  Qvec += TComplex(ampl * TMath::Cos(phi * nmod), ampl * TMath::Sin(phi * nmod));
   sum += ampl;
 }
 
@@ -136,16 +136,36 @@ void EventPlaneHelper::DoCorrections(float& qx, float& qy,
   qy -= corrections[1];
 
   // Twisting of the Qx-Qy distribution.
-  qx = (qx - corrections[7] * qy) / (1.0 - corrections[7] * corrections[7]);
-  qy = (qy - corrections[6] * qx) / (1.0 - corrections[6] * corrections[6]);
+  qx = (qx - corrections[3] * qy) / (1.0 - corrections[3] * corrections[2]);
+  qy = (qy - corrections[2] * qx) / (1.0 - corrections[3] * corrections[2]);
 
   // Rescaling of the Qx-Qy into a circle.
-  if (corrections[4] == 0 || corrections[5] == 0) {
-    printf("Correction warning: aplus or aminus is equal to zero, rescale not applied!\n");
-  } else {
+  if (fabs(corrections[4]) > 1e-8) {
     qx /= corrections[4];
+  }
+  if (fabs(corrections[5]) > 1e-8) {
     qy /= corrections[5];
   }
+}
+
+void EventPlaneHelper::DoRecenter(float& qx, float& qy, float x0, float y0)
+{
+  qx -= x0;
+  qy -= y0;
+}
+
+void EventPlaneHelper::DoTwist(float& qx, float& qy, float lp, float lm)
+{
+  qx = (qx - lm * qy) / (1.0 - lm * lp);
+  qy = (qy - lp * qx) / (1.0 - lm * lp);
+}
+
+void EventPlaneHelper::DoRescale(float& qx, float& qy, float ap, float am)
+{
+  if (fabs(ap) > 1e-8)
+    qx /= ap;
+  if (fabs(am) > 1e-8)
+    qy /= am;
 }
 
 void EventPlaneHelper::GetCorrRecentering(const std::shared_ptr<TH2> histQ, float& meanX, float& meanY)
@@ -181,7 +201,7 @@ void EventPlaneHelper::GetCorrTwistRecale(const std::shared_ptr<TH2> histQ,
 
 float EventPlaneHelper::GetEventPlane(const float qx, const float qy)
 {
-  return (TMath::ATan2(qy, qx)) / 2.;
+  return (TMath::ATan2(qy, qx));
 }
 
 double EventPlaneHelper::GetResolution(const std::shared_ptr<TProfile> prof)
@@ -190,5 +210,5 @@ double EventPlaneHelper::GetResolution(const std::shared_ptr<TProfile> prof)
   double avgAC = prof->GetBinContent(2);
   double avgBC = prof->GetBinContent(3);
 
-  return (avgAB - avgAC) / avgBC;
+  return TMath::Sqrt(avgAB * avgAC / avgBC);
 }

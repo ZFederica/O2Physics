@@ -22,6 +22,8 @@ using namespace o2::framework;
 #include "TableHelper.h"
 #include "iostream"
 
+#define bitcheck(var, nbit) ((var) & (1 << (nbit)))
+
 struct MultiplicityTableTaskIndexed {
   SliceCache cache;
   Produces<aod::FV0Mults> multFV0;
@@ -309,7 +311,10 @@ struct MultiplicityTableTaskIndexed {
           if (track.hasTRD())
             nHasTRD++;
         };
-        multExtra(static_cast<float>(collision.numContrib()), collision.chi2(), collision.collisionTimeRes(), mRunNumber, collision.posZ(), collision.sel8(), nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC);
+
+        int bcNumber = bc.globalBC() % 3564;
+
+        multExtra(static_cast<float>(collision.numContrib()), collision.chi2(), collision.collisionTimeRes(), mRunNumber, collision.posZ(), collision.sel8(), nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC, bcNumber);
       }
     }
   }

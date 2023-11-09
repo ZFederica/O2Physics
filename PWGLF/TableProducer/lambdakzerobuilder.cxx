@@ -129,6 +129,7 @@ struct lambdakzeroBuilder {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
+  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
 
   // generate and fill extra QA histograms is requested
   Configurable<bool> d_doQA{"d_doQA", false, "Do basic QA"};
@@ -250,7 +251,7 @@ struct lambdakzeroBuilder {
       const AxisSpec axisVsPtCoarse{static_cast<int32_t>(dQANBinsPtCoarse), 0, dQAMaxPt, "#it{p}_{T} (GeV/c)"};
       const AxisSpec axisGammaMass{static_cast<int32_t>(dQANBinsMass), 0.000f, 0.400f, "Inv. Mass (GeV/c^{2})"};
       const AxisSpec axisK0ShortMass{static_cast<int32_t>(dQANBinsMass), 0.400f, 0.600f, "Inv. Mass (GeV/c^{2})"};
-      const AxisSpec axisLambdaMass{static_cast<int32_t>(dQANBinsMass), 1.01f, 1.21f, "Inv. Mass (GeV/c^{2})"};
+      const AxisSpec axisLambdaMass{static_cast<int32_t>(5 * dQANBinsMass), 1.01f, 2.01f, "Inv. Mass (GeV/c^{2})"};
       const AxisSpec axisHypertritonMass{static_cast<int32_t>(dQANBinsMass), 2.900f, 3.300f, "Inv. Mass (GeV/c^{2})"};
 
       registry.add("h2dGammaMass", "h2dGammaMass", kTH2F, {axisVsPtCoarse, axisGammaMass});
@@ -336,7 +337,8 @@ struct lambdakzeroBuilder {
           if (device.name.compare("lambdakzero-initializer") == 0)
             continue; // don't listen to the initializer, it's just to extend stuff
           const std::string v0DataName = "V0Datas";
-          if (input.matcher.binding == v0DataName && device.name.compare("multistrange-builder") != 0) {
+          const std::string v0DataExtName = "V0DatasExtension";
+          if ((input.matcher.binding == v0DataName || input.matcher.binding == v0DataExtName) && device.name.compare("multistrange-builder") != 0) {
             LOGF(info, "Device named %s has subscribed to V0datas table! Will now scan for desired settings...", device.name);
             for (auto const& option : device.options) {
               // 5 V0 topological selections
@@ -446,8 +448,10 @@ struct lambdakzeroBuilder {
     }
 
     auto run3grp_timestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    o2::parameters::GRPObject* grpo = 0x0;
     o2::parameters::GRPMagField* grpmag = 0x0;
+    if (!skipGRPOquery)
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
       // Fetch magnetic field from ccdb for current collision

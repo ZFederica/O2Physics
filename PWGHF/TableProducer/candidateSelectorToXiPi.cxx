@@ -26,8 +26,6 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::analysis::pdg;
-using namespace o2::aod::hf_cand_toxipi;
-using namespace o2::aod::hf_sel_toxipi;
 
 enum pidInfoStored {
   kPiFromLam = 0,
@@ -80,26 +78,26 @@ struct HfCandidateSelectorToXiPi {
   Configurable<bool> usePidTpcTofCombined{"usePidTpcTofCombined", false, "Perform PID using TPC & TOF"};
 
   // PID - TPC selections
-  Configurable<double> ptPiPidTpcMin{"ptPiPidTpcMin", 0.15, "Lower bound of track pT for TPC PID for pion selection"};
-  Configurable<double> ptPiPidTpcMax{"ptPiPidTpcMax", 5., "Upper bound of track pT for TPC PID for pion selection"};
+  Configurable<double> ptPiPidTpcMin{"ptPiPidTpcMin", 0.1, "Lower bound of track pT for TPC PID for pion selection"};
+  Configurable<double> ptPiPidTpcMax{"ptPiPidTpcMax", 999.9, "Upper bound of track pT for TPC PID for pion selection"};
   Configurable<double> nSigmaTpcPiMax{"nSigmaTpcPiMax", 3., "Nsigma cut on TPC only for pion selection"};
-  Configurable<double> nSigmaTpcCombinedPiMax{"nSigmaTpcCombinedPiMax", 5., "Nsigma cut on TPC combined with TOF for pion selection"};
+  Configurable<double> nSigmaTpcCombinedPiMax{"nSigmaTpcCombinedPiMax", 0., "Nsigma cut on TPC combined with TOF for pion selection"};
 
-  Configurable<double> ptPrPidTpcMin{"ptPrPidTpcMin", 0.15, "Lower bound of track pT for TPC PID for proton selection"};
-  Configurable<double> ptPrPidTpcMax{"ptPrPidTpcMax", 5., "Upper bound of track pT for TPC PID for proton selection"};
+  Configurable<double> ptPrPidTpcMin{"ptPrPidTpcMin", 0.1, "Lower bound of track pT for TPC PID for proton selection"};
+  Configurable<double> ptPrPidTpcMax{"ptPrPidTpcMax", 999.9, "Upper bound of track pT for TPC PID for proton selection"};
   Configurable<double> nSigmaTpcPrMax{"nSigmaTpcPrMax", 3., "Nsigma cut on TPC only for proton selection"};
-  Configurable<double> nSigmaTpcCombinedPrMax{"nSigmaTpcCombinedPrMax", 5., "Nsigma cut on TPC combined with TOF for proton selection"};
+  Configurable<double> nSigmaTpcCombinedPrMax{"nSigmaTpcCombinedPrMax", 0., "Nsigma cut on TPC combined with TOF for proton selection"};
 
   // PID - TOF selections
-  Configurable<double> ptPiPidTofMin{"ptPiPidTofMin", 0.15, "Lower bound of track pT for TOF PID for pion selection"};
-  Configurable<double> ptPiPidTofMax{"ptPiPidTofMax", 5., "Upper bound of track pT for TOF PID for pion selection"};
+  Configurable<double> ptPiPidTofMin{"ptPiPidTofMin", 0.1, "Lower bound of track pT for TOF PID for pion selection"};
+  Configurable<double> ptPiPidTofMax{"ptPiPidTofMax", 999.9, "Upper bound of track pT for TOF PID for pion selection"};
   Configurable<double> nSigmaTofPiMax{"nSigmaTofPiMax", 3., "Nsigma cut on TOF only for pion selection"};
-  Configurable<double> nSigmaTofCombinedPiMax{"nSigmaTofCombinedPiMax", 5., "Nsigma cut on TOF combined with TPC for pion selection"};
+  Configurable<double> nSigmaTofCombinedPiMax{"nSigmaTofCombinedPiMax", 0., "Nsigma cut on TOF combined with TPC for pion selection"};
 
-  Configurable<double> ptPrPidTofMin{"ptPrPidTofMin", 0.15, "Lower bound of track pT for TOF PID for proton selection"};
-  Configurable<double> ptPrPidTofMax{"ptPrPidTofMax", 5., "Upper bound of track pT for TOF PID for proton selection"};
+  Configurable<double> ptPrPidTofMin{"ptPrPidTofMin", 0.1, "Lower bound of track pT for TOF PID for proton selection"};
+  Configurable<double> ptPrPidTofMax{"ptPrPidTofMax", 999.9, "Upper bound of track pT for TOF PID for proton selection"};
   Configurable<double> nSigmaTofPrMax{"nSigmaTofPrMax", 3., "Nsigma cut on TOF only for proton selection"};
-  Configurable<double> nSigmaTofCombinedPrMax{"nSigmaTofCombinedPrMax", 5., "Nsigma cut on TOF combined with TPC for proton selection"};
+  Configurable<double> nSigmaTofCombinedPrMax{"nSigmaTofCombinedPrMax", 0., "Nsigma cut on TOF combined with TPC for proton selection"};
 
   // invariant mass cuts
   Configurable<double> sigmaInvMassLambda{"sigmaInvMassLambda", 0.0025, "Invariant mass cut for lambda (sigma)"};
@@ -180,8 +178,8 @@ struct HfCandidateSelectorToXiPi {
   void process(aod::HfCandToXiPi const& candidates,
                TracksSel const&)
   {
-    double massLambdaFromPDG = RecoDecay::getMassPDG(kLambda0);
-    double massXiFromPDG = RecoDecay::getMassPDG(kXiMinus);
+    double massLambdaFromPDG = o2::analysis::pdg::MassLambda0;
+    double massXiFromPDG = o2::analysis::pdg::MassXiMinus;
 
     int collId = -999;
 
@@ -478,10 +476,10 @@ struct HfCandidateSelectorToXiPi {
         statusPidPiFromCasc = selectorPion.statusTpc(trackPiFromCasc);
         statusPidPiFromCharm = selectorPion.statusTpc(trackPiFromOmeg);
       } else if (usePidTpcTofCombined) {
-        statusPidPrFromLam = selectorProton.statusTpcAndTof(trackPrFromLam);
-        statusPidPiFromLam = selectorPion.statusTpcAndTof(trackPiFromLam);
-        statusPidPiFromCasc = selectorPion.statusTpcAndTof(trackPiFromCasc);
-        statusPidPiFromCharm = selectorPion.statusTpcAndTof(trackPiFromOmeg);
+        statusPidPrFromLam = selectorProton.statusTpcOrTof(trackPrFromLam);
+        statusPidPiFromLam = selectorPion.statusTpcOrTof(trackPiFromLam);
+        statusPidPiFromCasc = selectorPion.statusTpcOrTof(trackPiFromCasc);
+        statusPidPiFromCharm = selectorPion.statusTpcOrTof(trackPiFromOmeg);
       }
 
       if (statusPidPrFromLam == TrackSelectorPID::Accepted && statusPidPiFromLam == TrackSelectorPID::Accepted) {
