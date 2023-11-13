@@ -536,7 +536,7 @@ struct HfCandidateCreatorToXiPiAmbTrk {
             auto v0MC = particlesMC.rawIteratorAt(cascMC.daughtersIds().front());
             if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
               debugGenLambda = 1;
-              flag = sign * (1 << DecayType::XiczeroToXiPi);
+              flag = sign * (1 << aod::hf_cand_toxipi::DecayType::XiczeroToXiPi);
               collIdxCasc = cascMC.mcCollisionId();
             }
           }
