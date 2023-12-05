@@ -112,7 +112,7 @@ struct HfCandidateCreatorToXiPi {
     runNumber = 0;
   }
 
-  void processIdxCombinatorics(SelectedCollisions const& collisions,
+  /*void processIdxCombinatorics(SelectedCollisions const& collisions,
                                aod::BCsWithTimestamps const& bcWithTimeStamps,
                                MyTracks const& tracks,
                                FilteredHfTrackAssocSel const& trackIndices,
@@ -422,7 +422,7 @@ struct HfCandidateCreatorToXiPi {
       }   // loop over cascades
     }     // close loop collisions
   }       // end of process
-  PROCESS_SWITCH(HfCandidateCreatorToXiPi, processIdxCombinatorics, "Do indexes combinatorics", true);
+  PROCESS_SWITCH(HfCandidateCreatorToXiPi, processIdxCombinatorics, "Do indexes combinatorics", true);*/
 
   void processDerivedData(SelectedCollisions const& collisions,
                           aod::BCsWithTimestamps const& bcWithTimeStamps,
@@ -690,7 +690,7 @@ struct HfCandidateCreatorToXiPi {
       } // loop over LF Cascade-bachelor candidates
     }   // loop over collisions
   }     // end of process
-  PROCESS_SWITCH(HfCandidateCreatorToXiPi, processDerivedData, "Process derived data", false);
+  //PROCESS_SWITCH(HfCandidateCreatorToXiPi, processDerivedData, "Process derived data", false);
 
 }; // end of struct
 
