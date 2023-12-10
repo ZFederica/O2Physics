@@ -40,6 +40,7 @@
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 
 using namespace o2;
+using namespace o2::track;
 using namespace o2::analysis;
 using namespace o2::aod;
 using namespace o2::aod::cascdata;
@@ -53,7 +54,7 @@ using namespace o2::framework::expressions;
 struct HfCandidateCreatorToXiPi {
   Produces<aod::HfCandToXiPi> rowCandidate;
 
-  Configurable<bool> doPvRefit{"doPvRefit", false, "set to true if you do PV refit in trackIndexSkimCreator.cxx"};
+  //Configurable<bool> doPvRefit{"doPvRefit", false, "set to true if you do PV refit in trackIndexSkimCreator.cxx"};
 
   Configurable<bool> propagateToPCA{"propagateToPCA", false, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
@@ -85,19 +86,23 @@ struct HfCandidateCreatorToXiPi {
 
   int runNumber;
 
-  using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
-  using MyTracks = soa::Join<aod::TracksWCovDca, aod::HfPvRefitTrack>;
-  using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
+  //using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
+  //using MyTracks = soa::Join<Tracks, TracksCov, TracksDCA>;
+  //using FilteredHfTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
   using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>; // to use strangeness tracking, use aod::TraCascDatas instead of aod::CascDatas
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
-  using MySkimIdx = HfCascLf2Prongs;
+  // new 
+  // using MySkimIdx = aod::HfCascLf2Prongs;
+  //OK!!using MySkimIdx = soa::Filtered<aod::HfCascLf2Prongs>;
 
-  Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0); // filter to use only HF selected collisions
-  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng > 0);
+  //Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == 0); // filter to use only HF selected collisions
+  //Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng > 0);
+  //new
+  //OK!!Filter filterSelectIndexes = (hf_track_index::hfflag > (uint8_t)0);
 
-  Preslice<FilteredHfTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId; // aod::hf_track_association::collisionId
-  Preslice<MyCascTable> cascadesPerCollision = aod::cascdata::collisionId;
-  Preslice<MySkimIdx> candidatesPerCollision = hf_track_index::collisionId;
+  //Preslice<FilteredHfTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId; // aod::hf_track_association::collisionId
+  //Preslice<MyCascTable> cascadesPerCollision = aod::cascdata::collisionId;
+  //Preslice<aod::HfCascLf2Prongs> indexesPerCollision = hf_track_index::collisionId;
 
   OutputObj<TH1F> hInvMassCharmBaryon{TH1F("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.2, 3.1)};
   OutputObj<TH1F> hFitterStatus{TH1F("hFitterStatus", "Charm DCAFitter status;status;entries", 3, -0.5, 2.5)};                     // 0 --> vertex(es) found, 1 --> exception found, 2 --> no vertex found (but no exception)
@@ -424,13 +429,13 @@ struct HfCandidateCreatorToXiPi {
   }       // end of process
   PROCESS_SWITCH(HfCandidateCreatorToXiPi, processIdxCombinatorics, "Do indexes combinatorics", true);*/
 
-  void processDerivedData(SelectedCollisions const& collisions,
-                          aod::BCsWithTimestamps const& bcWithTimeStamps,
-                          MyTracks const& tracks,
-                          MyCascTable const& cascades,
-                          MyV0Table const&,
-                          aod::V0sLinked const&,
-                          MySkimIdx const& candidates)
+  void process(aod::Collisions const&,
+               aod::BCsWithTimestamps const&,
+                TracksWCovDca const&,
+                //aod::Tracks const&, aod::TracksCov const&, aod::TracksDCA const&,
+                MyCascTable const&, aod::Cascades const&, aod::CascDataLink const&,
+                MyV0Table const&, aod::V0sLinked const&,
+                aod::HfCascLf2Prongs const& candidates)
   {
 
     double massPionFromPDG = MassPiPlus;    // pdg code 211
@@ -451,23 +456,27 @@ struct HfCandidateCreatorToXiPi {
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
 
-    for (const auto& collision : collisions) {
+    LOGP(info, "Size of DD table is {}", candidates.size());
+
+    //for (const auto& collision : collisions) {
 
       // set the magnetic field from CCDB
-      auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+      /*auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
       initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
       auto magneticField = o2::base::Propagator::Instance()->getNominalBz(); // z component
-
       df.setBz(magneticField);
-      df.setRefitWithMatCorr(refitWithMatCorr);
+      df.setRefitWithMatCorr(refitWithMatCorr);*/
 
       // loop over cascades reconstructed by cascadebuilder.cxx
-      auto thisCollId = collision.globalIndex();
-      auto groupedCandidates = candidates.sliceBy(candidatesPerCollision, thisCollId);
+      //auto thisCollId = collision.globalIndex();
+      //auto groupedCandidates = candidates.sliceBy(indexesPerCollision, thisCollId);
 
-      for (const auto& cand : groupedCandidates) {
+      //for (const auto& cand : groupedCandidates) {
+      for (const auto& cand : candidates) {
 
         hCandidateCounter->Fill(0);
+
+        LOGP(info, "HFFlag from DD table is {}", cand.hfflag());
 
         if (!TESTBIT(cand.hfflag(), aod::hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi)) {
           continue;
@@ -475,13 +484,24 @@ struct HfCandidateCreatorToXiPi {
 
         hCandidateCounter->Fill(1);
 
-        auto casc = cand.cascade_as<MyCascTable>();
-        auto trackPion = cand.prong0_as<MyTracks>();           // pi <-- charm baryon
-        auto trackXiDauCharged = casc.bachelor_as<MyTracks>(); // pion <- xi track
+        auto collision = cand.collision_as<aod::Collisions>();
+
+        // set the magnetic field from CCDB
+        auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+        initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2);
+        auto magneticField = o2::base::Propagator::Instance()->getNominalBz(); // z component
+
+        df.setBz(magneticField);
+        df.setRefitWithMatCorr(refitWithMatCorr);
+
+        auto cascElement = cand.cascade_as<aod::CascDataLink>(); //FIXME!!! (rearrange cascade names)
+        auto casc = cascElement.cascData_as<MyCascTable>();
+        auto trackPion = cand.prong0_as<TracksWCovDca>();           // pi <-- charm baryon
+        auto trackXiDauCharged = casc.bachelor_as<TracksWCovDca>(); // pion <- xi track
         auto v0 = casc.v0_as<aod::V0sLinked>();
         auto v0Element = v0.v0Data_as<MyV0Table>();           // V0 <-- xi
-        auto trackV0Dau0 = v0Element.posTrack_as<MyTracks>(); // V0 positive daughter track
-        auto trackV0Dau1 = v0Element.negTrack_as<MyTracks>(); // V0 negative daughter track
+        auto trackV0Dau0 = v0Element.posTrack_as<TracksWCovDca>(); // V0 positive daughter track
+        auto trackV0Dau1 = v0Element.negTrack_as<TracksWCovDca>(); // V0 negative daughter track
 
         //-------------------------- V0 info---------------------------
         // pseudorapidity
@@ -577,7 +597,7 @@ struct HfCandidateCreatorToXiPi {
         auto primaryVertex = getPrimaryVertex(collision); // get the associated covariance matrix with auto covMatrixPV = primaryVertex.getCov();
         std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
 
-        if (doPvRefit && ((trackPion.pvRefitSigmaX2() != 1e10f) || (trackPion.pvRefitSigmaY2() != 1e10f) || (trackPion.pvRefitSigmaZ2() != 1e10f))) { // if I asked for PV refit in trackIndexSkimCreator.cxx
+        /*if (doPvRefit && ((trackPion.pvRefitSigmaX2() != 1e10f) || (trackPion.pvRefitSigmaY2() != 1e10f) || (trackPion.pvRefitSigmaZ2() != 1e10f))) { // if I asked for PV refit in trackIndexSkimCreator.cxx
           pvCoord[0] = trackPion.pvRefitX();
           pvCoord[1] = trackPion.pvRefitY();
           pvCoord[2] = trackPion.pvRefitZ();
@@ -600,7 +620,7 @@ struct HfCandidateCreatorToXiPi {
           dcazV0Dau0 = impactParameterV0Dau0.getZ();
           dcazV0Dau1 = impactParameterV0Dau1.getZ();
           dcazPiFromCasc = impactParameterPiFromCasc.getZ();
-        }
+        }*/
 
         // impact parameters
         o2::dataformats::DCA impactParameterCasc;
@@ -688,7 +708,7 @@ struct HfCandidateCreatorToXiPi {
                      hfFlag);
 
       } // loop over LF Cascade-bachelor candidates
-    }   // loop over collisions
+    //}   // loop over collisions
   }     // end of process
   //PROCESS_SWITCH(HfCandidateCreatorToXiPi, processDerivedData, "Process derived data", false);
 

@@ -3516,7 +3516,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
           // fill table row only if a vertex was found
           if (hfFlag != 0) {
             rowTrackIndexCasc2Prong(thisCollId,
-                                    casc.globalIndex(),
+                                    casc.cascadeId(),
+                                    //casc.globalIndex(),
                                     trackPion1.globalIndex(),
                                     hfFlag);
           }
