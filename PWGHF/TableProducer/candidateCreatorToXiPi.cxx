@@ -431,11 +431,11 @@ struct HfCandidateCreatorToXiPi {
 
   void process(aod::Collisions const&,
                aod::BCsWithTimestamps const&,
-                TracksWCovDca const&,
-                //aod::Tracks const&, aod::TracksCov const&, aod::TracksDCA const&,
-                MyCascTable const&, aod::Cascades const&, aod::CascDataLink const&,
-                MyV0Table const&, aod::V0sLinked const&,
-                aod::HfCascLf2Prongs const& candidates)
+               TracksWCovDca const&,
+               MyCascTable const&, aod::Cascades const&, aod::CascDataLink const&,
+               //aod::CascDatas const&, aod::CascCovs, aod::Cascades const&, aod::CascDataLink const&,
+               MyV0Table const&, aod::V0sLinked const&,
+               aod::HfCascLf2Prongs const& candidates)
   {
 
     double massPionFromPDG = MassPiPlus;    // pdg code 211
@@ -494,12 +494,25 @@ struct HfCandidateCreatorToXiPi {
         df.setBz(magneticField);
         df.setRefitWithMatCorr(refitWithMatCorr);
 
-        auto cascElement = cand.cascade_as<aod::CascDataLink>(); //FIXME!!! (rearrange cascade names)
-        auto casc = cascElement.cascData_as<MyCascTable>();
+        LOGF(info, "About to cast pion <-- charm!!");
         auto trackPion = cand.prong0_as<TracksWCovDca>();           // pi <-- charm baryon
+        LOGP(info, "Pion <-- charm index is {}", cand.prong0Id());
+
+        auto cascElement = cand.cascade_as<aod::CascDataLink>();
+        LOGF(info, "cascade_as cast worked!");
+        LOGP(info, "Cascade index is {}", cand.cascadeId());
+
+        if(cand.cascade_as<aod::CascDataLink>().has_cascData()){
+          LOGF(info, "Casc in AOD has cascData!!");
+        } else {
+          LOGF(info, "Casc in AOD has NO cascData!!");
+        }
+
+        auto casc = cascElement.cascData_as<MyCascTable>();
+        LOGF(info, "cascData_as cast worked!");
         auto trackXiDauCharged = casc.bachelor_as<TracksWCovDca>(); // pion <- xi track
-        auto v0 = casc.v0_as<aod::V0sLinked>();
-        auto v0Element = v0.v0Data_as<MyV0Table>();           // V0 <-- xi
+        auto v0Element = casc.v0_as<aod::V0sLinked>();
+        auto v0 = v0Element.v0Data_as<MyV0Table>();           // V0 <-- xi
         auto trackV0Dau0 = v0Element.posTrack_as<TracksWCovDca>(); // V0 positive daughter track
         auto trackV0Dau1 = v0Element.negTrack_as<TracksWCovDca>(); // V0 negative daughter track
 
@@ -694,7 +707,7 @@ struct HfCandidateCreatorToXiPi {
                      impactParameterCasc.getY(), impactParPiFromCharmBaryonXY,
                      impactParameterCasc.getZ(), impactParPiFromCharmBaryonZ,
                      std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterPiFromCharmBaryon.getSigmaY2()),
-                     v0Element.globalIndex(), v0Element.posTrackId(), v0Element.negTrackId(),
+                     v0.globalIndex(), v0.posTrackId(), v0.negTrackId(),
                      casc.globalIndex(), trackPion.globalIndex(), trackXiDauCharged.globalIndex(),
                      mLambda, mCasc, mCharmBaryon,
                      cpaV0, cpaCharmBaryon, cpaCasc, cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
