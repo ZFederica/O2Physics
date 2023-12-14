@@ -1064,7 +1064,7 @@ DECLARE_SOA_COLUMN(DecLenCascade, decLenCascade, double);
 DECLARE_SOA_COLUMN(DecLenV0, decLenV0, double);
 DECLARE_SOA_COLUMN(ErrorDecayLengthCharmBaryon, errorDecayLengthCharmBaryon, float);
 DECLARE_SOA_COLUMN(ErrorDecayLengthXYCharmBaryon, errorDecayLengthXYCharmBaryon, float);
-DECLARE_SOA_COLUMN(IsPiAmbiguous, isPiAmbiguous, bool);
+DECLARE_SOA_COLUMN(IsPiAmbiguous, isPiAmbiguous, bool); 
 
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
@@ -1114,7 +1114,8 @@ DECLARE_SOA_TABLE(HfCandToXiPi, "AOD", "HFCANDTOXIPI",
                   hf_cand_toxipi::DcaZToPvV0Dau0, hf_cand_toxipi::DcaZToPvV0Dau1, hf_cand_toxipi::DcaZToPvCascDau,
                   hf_cand_toxipi::DcaCascDau, hf_cand_toxipi::DcaV0Dau, hf_cand_toxipi::DcaCharmBaryonDau,
                   hf_cand_toxipi::DecLenCharmBaryon, hf_cand_toxipi::DecLenCascade, hf_cand_toxipi::DecLenV0, hf_cand_toxipi::ErrorDecayLengthCharmBaryon, hf_cand_toxipi::ErrorDecayLengthXYCharmBaryon,
-                  hf_cand_toxipi::IsPiAmbiguous, hf_track_index::HFflag);
+                  hf_cand_toxipi::IsPiAmbiguous, 
+                  hf_track_index::HFflag);
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfToXiPiMCRec, "AOD", "HFTOXIPIMCREC", //!
@@ -1136,7 +1137,8 @@ DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(NrCollAss, nrCollAss, int);
 DECLARE_SOA_COLUMN(PVContributor, pVContributor, bool);
-DECLARE_SOA_COLUMN(GlobTrack, globTrack, bool);
+DECLARE_SOA_COLUMN(GlobTrkWoDca, globTrkWoDca, bool);
+DECLARE_SOA_COLUMN(ItsQualTrack, itsQualTrack, bool);
 DECLARE_SOA_COLUMN(TrkTime, trkTime, float);
 DECLARE_SOA_COLUMN(TrkTimeRes, trkTimeRes, float);
 DECLARE_SOA_COLUMN(BCAssoc, bcAssoc, int);
@@ -1144,11 +1146,10 @@ DECLARE_SOA_COLUMN(CollTime, collTime, float);
 DECLARE_SOA_COLUMN(CollTimeRes, collTimeRes, float);
 DECLARE_SOA_COLUMN(HasCollAssoc, hasCollAssoc, bool);
 
-DECLARE_SOA_COLUMN(HasZeroCollAssoc, hasZeroCollAssoc, bool);
-DECLARE_SOA_COLUMN(HasOneCollAssoc, hasOneCollAssoc, bool);
-DECLARE_SOA_COLUMN(HasMultipleCollAssoc, hasMultipleCollAssoc, bool);
+DECLARE_SOA_COLUMN(NrCollAssPion, nrCollAssPion, int);
 DECLARE_SOA_COLUMN(IsPvContrib, isPvContrib, bool);
 DECLARE_SOA_COLUMN(IsPionGlobTrackWoDca, isPionGlobTrackWoDca, bool);
+DECLARE_SOA_COLUMN(IsPionItsQualityTrack, isPionItsQualityTrack, bool);
 DECLARE_SOA_COLUMN(TrackTypePion, trackTypePion, uint8_t);
 DECLARE_SOA_COLUMN(TPCCrossedRows,  tpcCrossedRows, int);
 DECLARE_SOA_COLUMN(TPCCrossedRowsOverCls, tpcCrossedRowsOverCls, float);
@@ -1159,6 +1160,27 @@ DECLARE_SOA_COLUMN(HasITSPion, hasITSPion, bool);
 DECLARE_SOA_COLUMN(ITSInnBNCls, itsInnBNCls, uint8_t);
 DECLARE_SOA_COLUMN(PtPion, ptPion, float);
 DECLARE_SOA_COLUMN(EtaPion, etaPion, float);
+DECLARE_SOA_COLUMN(PxGenPion, pxGenPion, float);
+DECLARE_SOA_COLUMN(PyGenPion, pyGenPion, float);
+DECLARE_SOA_COLUMN(PzGenPion, pzGenPion, float);
+DECLARE_SOA_COLUMN(PxRecPion, pxRecPion, float);
+DECLARE_SOA_COLUMN(PyRecPion, pyRecPion, float);
+DECLARE_SOA_COLUMN(PzRecPion, pzRecPion, float);
+
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);
+DECLARE_SOA_COLUMN(OriginRec, originRec, int8_t);
+DECLARE_SOA_COLUMN(XDecVtxCharmGen, xDecVtxCharmGen, float);
+DECLARE_SOA_COLUMN(YDecVtxCharmGen, yDecVtxCharmGen, float);
+DECLARE_SOA_COLUMN(ZDecVtxCharmGen, zDecVtxCharmGen, float);
+DECLARE_SOA_COLUMN(XDecVtxCascGen, xDecVtxCascGen, float);
+DECLARE_SOA_COLUMN(YDecVtxCascGen, yDecVtxCascGen, float);
+DECLARE_SOA_COLUMN(ZDecVtxCascGen, zDecVtxCascGen, float);
+DECLARE_SOA_COLUMN(XDecVtxCharmRec, xDecVtxCharmRec, float);
+DECLARE_SOA_COLUMN(YDecVtxCharmRec, yDecVtxCharmRec, float);
+DECLARE_SOA_COLUMN(ZDecVtxCharmRec, zDecVtxCharmRec, float);
+DECLARE_SOA_COLUMN(XDecVtxCascRec, xDecVtxCascRec, float);
+DECLARE_SOA_COLUMN(YDecVtxCascRec, yDecVtxCascRec, float);
+DECLARE_SOA_COLUMN(ZDecVtxCascRec, zDecVtxCascRec, float);
 
 } // end of namespace hf_cand_toxipi_ambtrk
 
@@ -1166,16 +1188,25 @@ DECLARE_SOA_COLUMN(EtaPion, etaPion, float);
 DECLARE_SOA_TABLE(HfToXiPiAmbTrk, "AOD", "HFTOXIPIAMBTRK",
                   hf_cand_toxipi_ambtrk::PT, hf_cand_toxipi_ambtrk::PZ, hf_cand_toxipi_ambtrk::P,
                   hf_cand_toxipi_ambtrk::Phi, hf_cand_toxipi_ambtrk::Eta, hf_cand_toxipi_ambtrk::NrCollAss,
-                  hf_cand_toxipi_ambtrk::PVContributor, hf_cand_toxipi_ambtrk::GlobTrack,
+                  hf_cand_toxipi_ambtrk::PVContributor, hf_cand_toxipi_ambtrk::GlobTrkWoDca, hf_cand_toxipi_ambtrk::ItsQualTrack,
                   hf_cand_toxipi_ambtrk::TrkTime, hf_cand_toxipi_ambtrk::TrkTimeRes, hf_cand_toxipi_ambtrk::BCAssoc,
                   hf_cand_toxipi_ambtrk::CollTime, hf_cand_toxipi_ambtrk::CollTimeRes, hf_cand_toxipi_ambtrk::HasCollAssoc);
 
 DECLARE_SOA_TABLE(HfToXiPiAmbExt, "AOD", "HFTOXIPIAMBEXT",
-                  hf_cand_toxipi_ambtrk::HasZeroCollAssoc, hf_cand_toxipi_ambtrk::HasOneCollAssoc, hf_cand_toxipi_ambtrk::HasMultipleCollAssoc,
-                  hf_cand_toxipi_ambtrk::IsPvContrib, hf_cand_toxipi_ambtrk::IsPionGlobTrackWoDca,
+                  hf_cand_toxipi_ambtrk::NrCollAssPion, 
+                  hf_cand_toxipi_ambtrk::IsPvContrib, hf_cand_toxipi_ambtrk::IsPionGlobTrackWoDca, hf_cand_toxipi_ambtrk::IsPionItsQualityTrack,
                   hf_cand_toxipi_ambtrk::TrackTypePion, hf_cand_toxipi_ambtrk::TPCCrossedRows, hf_cand_toxipi_ambtrk::TPCCrossedRowsOverCls, hf_cand_toxipi_ambtrk::TPCChi2Cls,
                   hf_cand_toxipi_ambtrk::HasTPCPion, hf_cand_toxipi_ambtrk::ITSChi2Cls, hf_cand_toxipi_ambtrk::HasITSPion, hf_cand_toxipi_ambtrk::ITSInnBNCls,
-                  hf_cand_toxipi_ambtrk::PtPion, hf_cand_toxipi_ambtrk::EtaPion);
+                  hf_cand_toxipi_ambtrk::PtPion, hf_cand_toxipi_ambtrk::EtaPion,
+                  hf_cand_toxipi_ambtrk::PxGenPion, hf_cand_toxipi_ambtrk::PyGenPion, hf_cand_toxipi_ambtrk::PzGenPion,
+                  hf_cand_toxipi_ambtrk::PxRecPion, hf_cand_toxipi_ambtrk::PyRecPion, hf_cand_toxipi_ambtrk::PzRecPion);
+
+DECLARE_SOA_TABLE(HfToXiPiResVtx, "AOD", "HFTOXIPIRESVTX",
+                  hf_cand_toxipi_ambtrk::FlagMcMatchRec, hf_cand_toxipi_ambtrk::OriginRec,
+                  hf_cand_toxipi_ambtrk::XDecVtxCharmGen, hf_cand_toxipi_ambtrk::YDecVtxCharmGen, hf_cand_toxipi_ambtrk::ZDecVtxCharmGen,
+                  hf_cand_toxipi_ambtrk::XDecVtxCascGen, hf_cand_toxipi_ambtrk::YDecVtxCascGen, hf_cand_toxipi_ambtrk::ZDecVtxCascGen,
+                  hf_cand_toxipi_ambtrk::XDecVtxCharmRec, hf_cand_toxipi_ambtrk::YDecVtxCharmRec, hf_cand_toxipi_ambtrk::ZDecVtxCharmRec,
+                  hf_cand_toxipi_ambtrk::XDecVtxCascRec, hf_cand_toxipi_ambtrk::YDecVtxCascRec, hf_cand_toxipi_ambtrk::ZDecVtxCascRec);
 
 // specific chic candidate properties
 namespace hf_cand_chic
