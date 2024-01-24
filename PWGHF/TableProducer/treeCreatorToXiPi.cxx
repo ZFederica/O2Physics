@@ -110,6 +110,8 @@ DECLARE_SOA_COLUMN(DecLenV0, decLenV0, double);
 DECLARE_SOA_COLUMN(ErrorDecayLengthCharmBaryon, errorDecayLengthCharmBaryon, float);
 DECLARE_SOA_COLUMN(ErrorDecayLengthXYCharmBaryon, errorDecayLengthXYCharmBaryon, float);
 DECLARE_SOA_COLUMN(IsPiAmbiguous, isPiAmbiguous, bool);
+DECLARE_SOA_COLUMN(CpaV0LF, cpaV0LF, float);
+DECLARE_SOA_COLUMN(CpaCascLF, cpaCascLF, float);
 // from creator - MC
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
@@ -168,6 +170,7 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
                   full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassCharmBaryon, full::ResultSelections, full::PidTpcInfoStored, full::PidTofInfoStored,
                   full::TpcNSigmaPiFromCharmBaryon, full::TpcNSigmaPiFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
                   full::TofNSigmaPiFromCharmBaryon, full::TofNSigmaPiFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
+                  full::CpaV0LF, full::CpaCascLF,
                   full::FlagMcMatchRec, full::DebugMcRec, full::OriginRec, full::CollisionMatched);
 
 } // namespace o2::aod
@@ -176,6 +179,9 @@ DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
 struct HfTreeCreatorToXiPi {
 
   Produces<o2::aod::HfToXiPiFulls> rowCandidateFull;
+
+  OutputObj<TH2F> hCheckCosPACasc{TH2F("hCheckCosPACasc", "cosPA new (y) vs cosPA LF (x) - cascade", 2000, 0.8, 1.0, 2000, 0.8, 1.0)};
+  OutputObj<TH2F> hCheckCosPAV0{TH2F("hCheckCosPAV0", "cosPA new (y) vs cosPA LF (x) - V0", 2000, 0.8, 1.0, 2000, 0.8, 1.0)};
 
   void init(InitContext const&)
   {
@@ -282,6 +288,8 @@ struct HfTreeCreatorToXiPi {
       candidate.tofNSigmaPiFromCasc(),
       candidate.tofNSigmaPiFromLambda(),
       candidate.tofNSigmaPrFromLambda(),
+      candidate.cpaV0LF(),
+      candidate.cpaCascLF(),
       flagMc,
       debugMc,
       originMc,
@@ -306,6 +314,11 @@ struct HfTreeCreatorToXiPi {
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
       fillCandidate(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+
+      if(std::abs(candidate.flagMcMatchRec()) == 4){
+        hCheckCosPAV0->Fill(candidate.cpaV0LF(),candidate.cosPAV0());
+        hCheckCosPACasc->Fill(candidate.cpaCascLF(),candidate.cosPACasc());
+      }
     }
   }
   PROCESS_SWITCH(HfTreeCreatorToXiPi, processMc, "Process MC", false);

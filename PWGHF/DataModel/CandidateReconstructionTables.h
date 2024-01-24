@@ -1065,6 +1065,8 @@ DECLARE_SOA_COLUMN(DecLenV0, decLenV0, double);
 DECLARE_SOA_COLUMN(ErrorDecayLengthCharmBaryon, errorDecayLengthCharmBaryon, float);
 DECLARE_SOA_COLUMN(ErrorDecayLengthXYCharmBaryon, errorDecayLengthXYCharmBaryon, float);
 DECLARE_SOA_COLUMN(IsPiAmbiguous, isPiAmbiguous, bool); 
+DECLARE_SOA_COLUMN(CpaV0LF, cpaV0LF, float);
+DECLARE_SOA_COLUMN(CpaCascLF, cpaCascLF, float);
 
 // MC matching result:
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
@@ -1115,7 +1117,7 @@ DECLARE_SOA_TABLE(HfCandToXiPi, "AOD", "HFCANDTOXIPI",
                   hf_cand_toxipi::DcaCascDau, hf_cand_toxipi::DcaV0Dau, hf_cand_toxipi::DcaCharmBaryonDau,
                   hf_cand_toxipi::DecLenCharmBaryon, hf_cand_toxipi::DecLenCascade, hf_cand_toxipi::DecLenV0, hf_cand_toxipi::ErrorDecayLengthCharmBaryon, hf_cand_toxipi::ErrorDecayLengthXYCharmBaryon,
                   hf_cand_toxipi::IsPiAmbiguous, 
-                  hf_track_index::HFflag);
+                  hf_track_index::HFflag, hf_cand_toxipi::CpaV0LF, hf_cand_toxipi::CpaCascLF);
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfToXiPiMCRec, "AOD", "HFTOXIPIMCREC", //!

@@ -95,6 +95,8 @@ struct HfCandidateCreatorToXiPi {
   OutputObj<TH1F> hInvMassCharmBaryon{TH1F("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.2, 3.1)};
   OutputObj<TH1F> hFitterStatus{TH1F("hFitterStatus", "Charm DCAFitter status;status;entries", 3, -0.5, 2.5)};                     // 0 --> vertex(es) found, 1 --> exception found, 2 --> no vertex found (but no exception)
   OutputObj<TH1F> hCandidateCounter{TH1F("hCandidateCounter", "Candidate counter wrt derived data;status;entries", 4, -0.5, 3.5)}; // 0 --> candidates in derived data table, 1 --> candidates passing testbit selection, 2 --> candidates passing fitter step 3 --> candidates filled in new table
+  OutputObj<TH2F> hCheckCosPACasc{TH2F("hCheckCosPACasc", "cosPA new (y) vs cosPA LF (x) - cascade", 2000, 0.8, 1.0, 2000, 0.8, 1.0)};
+  OutputObj<TH2F> hCheckCosPAV0{TH2F("hCheckCosPAV0", "cosPA new (y) vs cosPA LF (x) - V0", 2000, 0.8, 1.0, 2000, 0.8, 1.0)};
 
   void init(InitContext const&)
   {
@@ -283,6 +285,12 @@ struct HfCandidateCreatorToXiPi {
       double cpaxyCharmBaryon = RecoDecay::cpaXY(pvCoord, coordVtxCharmBaryon, pVecCharmBaryon);
       double cpaxyCasc = RecoDecay::cpaXY(coordVtxCharmBaryon, vertexCasc, pVecCasc);
 
+      // cosPA from LF table
+      auto cpaV0LF = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+      auto cpaCascLF = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
+      hCheckCosPAV0->Fill(cpaV0LF,cpaV0);
+      hCheckCosPACasc->Fill(cpaCascLF,cpaCasc);
+
       // computing decay length and ctau
       double decLenCharmBaryon = RecoDecay::distance(pvCoord, coordVtxCharmBaryon);
       double decLenCascade = RecoDecay::distance(coordVtxCharmBaryon, vertexCasc);
@@ -344,7 +352,7 @@ struct HfCandidateCreatorToXiPi {
                    dcazV0Dau0, dcazV0Dau1, dcazPiFromCasc,
                    dcaCascDau, dcaV0Dau, dcaCharmBaryonDau,
                    decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon,
-                   isPiAmb, hfFlag);
+                   isPiAmb, hfFlag, cpaV0LF, cpaCascLF);
 
     } // loop over LF Cascade-bachelor candidates
   }   // end of process
@@ -525,6 +533,12 @@ struct HfCandidateCreatorToXiPi {
       double cpaxyCharmBaryon = RecoDecay::cpaXY(pvCoord, coordVtxCharmBaryon, pVecCharmBaryon);
       double cpaxyCasc = RecoDecay::cpaXY(coordVtxCharmBaryon, vertexCasc, pVecCasc);
 
+      // cosPA from LF table
+      float cpaV0LF = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+      float cpaCascLF = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
+      hCheckCosPAV0->Fill(cpaV0LF,cpaV0);
+      hCheckCosPACasc->Fill(cpaCascLF,cpaCasc);
+
       // computing decay length and ctau
       double decLenCharmBaryon = RecoDecay::distance(pvCoord, coordVtxCharmBaryon);
       double decLenCascade = RecoDecay::distance(coordVtxCharmBaryon, vertexCasc);
@@ -586,7 +600,7 @@ struct HfCandidateCreatorToXiPi {
                    dcazV0Dau0, dcazV0Dau1, dcazPiFromCasc,
                    dcaCascDau, dcaV0Dau, dcaCharmBaryonDau,
                    decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon,
-                   isPiAmb, hfFlag);
+                   isPiAmb, hfFlag, cpaV0LF, cpaCascLF);
 
     } // loop over LF Cascade-bachelor candidates
   }   // end of process
