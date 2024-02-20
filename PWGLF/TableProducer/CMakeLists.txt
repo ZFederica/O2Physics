@@ -10,15 +10,19 @@
 # or submit itself to any jurisdiction.
 
 add_subdirectory(QC)
+add_subdirectory(converters)
 
 # General purpose
 o2physics_add_dpl_workflow(tpcpid
                     SOURCES lfTPCPID.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(zdcsp
+                    SOURCES zdcSP.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
 
 # Strangeness
-
 o2physics_add_dpl_workflow(lambdakzerobuilder
                     SOURCES lambdakzerobuilder.cxx
                     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
@@ -82,6 +86,22 @@ o2physics_add_dpl_workflow(hstrangecorrelationfilter
 o2physics_add_dpl_workflow(st-coll-ids
                     SOURCES stCollIds.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strange-tree-creator
+                    SOURCES LFStrangeTreeCreator.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+# strange derived - spawners
+o2physics_add_dpl_workflow(lambdakzerospawner
+                    SOURCES lambdakzerospawner.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascadespawner
+                    SOURCES cascadespawner.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 # Nuclei
@@ -154,6 +174,11 @@ o2physics_add_dpl_workflow(v0qaanalysis
 
 o2physics_add_dpl_workflow(cascqaanalysis
                     SOURCES cascqaanalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascadeflow
+                    SOURCES cascadeflow.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

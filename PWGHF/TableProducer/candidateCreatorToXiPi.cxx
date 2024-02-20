@@ -86,7 +86,6 @@ struct HfCandidateCreatorToXiPi {
   using MyCascTableStrTrk = soa::Join<aod::TraCascDatas, aod::CascCovs>; // to use strangeness tracking
   using CascadesLinked = soa::Join<Cascades, CascDataLink>;
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
-  using V0sLinked = soa::Join<V0s, V0DataLink>;
   using MySkimIdx = soa::Filtered<aod::HfCascLf2Prongs>;
   using MyTracks = soa::Join<aod::TracksWCovDca, aod::TrackCompColls>;
 
@@ -95,6 +94,7 @@ struct HfCandidateCreatorToXiPi {
   OutputObj<TH1F> hInvMassCharmBaryon{TH1F("hInvMassCharmBaryon", "Charm baryon invariant mass;inv mass;entries", 500, 2.2, 3.1)};
   OutputObj<TH1F> hFitterStatus{TH1F("hFitterStatus", "Charm DCAFitter status;status;entries", 3, -0.5, 2.5)};                     // 0 --> vertex(es) found, 1 --> exception found, 2 --> no vertex found (but no exception)
   OutputObj<TH1F> hCandidateCounter{TH1F("hCandidateCounter", "Candidate counter wrt derived data;status;entries", 4, -0.5, 3.5)}; // 0 --> candidates in derived data table, 1 --> candidates passing testbit selection, 2 --> candidates passing fitter step 3 --> candidates filled in new table
+  OutputObj<TH1F> hCascadesCounter{TH1F("hCascadesCounter", "Cascades counter wrt derived data;status;entries", 2, -0.5, 1.5)};    // 0 --> cascades in derived data table (and stored in AOD table), 1 --> cascades in derived data table and also accessible in cascData table
   OutputObj<TH2F> hCheckCosPACasc{TH2F("hCheckCosPACasc", "cosPA new (y) vs cosPA LF (x) - cascade", 2000, 0.8, 1.0, 2000, 0.8, 1.0)};
   OutputObj<TH2F> hCheckCosPAV0{TH2F("hCheckCosPAV0", "cosPA new (y) vs cosPA LF (x) - V0", 2000, 0.8, 1.0, 2000, 0.8, 1.0)};
 
@@ -106,16 +106,15 @@ struct HfCandidateCreatorToXiPi {
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
 
-    if (doprocessRegularCasc == true && doprocessTrackedCasc == true) {
+    /*if (doprocessRegularCasc == true && doprocessTrackedCasc == true) {
       LOGF(fatal, "Cannot enable processRegularCasc and processTrackedCasc at the same time. Please choose one.");
-    }
+    }*/
   }
 
   void processRegularCasc(aod::Collisions const&,
                           aod::BCsWithTimestamps const&,
                           MyTracks const&,
                           MyCascTable const&, CascadesLinked const&,
-                          MyV0Table const&, V0sLinked const&,
                           MySkimIdx const& candidates)
   {
 
@@ -163,17 +162,16 @@ struct HfCandidateCreatorToXiPi {
 
       auto trackPion = cand.prong0_as<MyTracks>();
       auto cascAodElement = cand.cascade_as<aod::CascadesLinked>();
+      hCascadesCounter->Fill(0);
+      int v0index = cascAodElement.v0Id();
+      if (!cascAodElement.has_cascData())
+        continue;
       auto casc = cascAodElement.cascData_as<MyCascTable>();
-      auto trackXiDauCharged = casc.bachelor_as<MyTracks>(); // pion <- xi track
-      auto v0AodElement = casc.v0_as<aod::V0sLinked>();
-      auto v0 = v0AodElement.v0Data_as<MyV0Table>();      // V0 <-- xi
-      auto trackV0Dau0 = v0.posTrack_as<MyTracks>(); // V0 positive daughter track
-      auto trackV0Dau1 = v0.negTrack_as<MyTracks>(); // V0 negative daughter track
+      hCascadesCounter->Fill(1);
 
-      //------------- is pi <- charm track ambiguous ----------------
-      if(trackPion.compatibleCollIds().size() > 1) {
-        isPiAmb = true;
-      }
+      auto trackXiDauCharged = casc.bachelor_as<MyTracks>(); // pion <- xi track
+      auto trackV0Dau0 = casc.posTrack_as<MyTracks>(); // V0 positive daughter track
+      auto trackV0Dau1 = casc.negTrack_as<MyTracks>(); // V0 negative daughter track
 
       //-------------------------- V0 info---------------------------
       // pseudorapidity
@@ -232,7 +230,6 @@ struct HfCandidateCreatorToXiPi {
       hFitterStatus->Fill(0);
       hCandidateCounter->Fill(2);
       auto vertexCharmBaryonFromFitter = df.getPCACandidate();
-      auto chi2PCACharmBaryon = df.getChi2AtPCACandidate();
       std::array<float, 3> pVecCascAsD;
       std::array<float, 3> pVecPionFromCharmBaryon;
       df.propagateTracksToVertex();
@@ -278,18 +275,15 @@ struct HfCandidateCreatorToXiPi {
       double mCharmBaryon = RecoDecay::m(std::array{pVecCascAsD, pVecPionFromCharmBaryon}, arrMassCharmBaryon);
 
       // computing cosPA
-      double cpaV0 = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
+      double cpaV0 = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
       double cpaCharmBaryon = RecoDecay::cpa(pvCoord, coordVtxCharmBaryon, pVecCharmBaryon);
-      double cpaCasc = RecoDecay::cpa(coordVtxCharmBaryon, vertexCasc, pVecCasc);
-      double cpaxyV0 = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
+      double cpaCasc = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
+      double cpaxyV0 = RecoDecay::cpaXY(pvCoord, vertexV0, pVecV0);
       double cpaxyCharmBaryon = RecoDecay::cpaXY(pvCoord, coordVtxCharmBaryon, pVecCharmBaryon);
       double cpaxyCasc = RecoDecay::cpaXY(coordVtxCharmBaryon, vertexCasc, pVecCasc);
 
-      // cosPA from LF table
-      auto cpaV0LF = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
-      auto cpaCascLF = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
-      hCheckCosPAV0->Fill(cpaV0LF,cpaV0);
-      hCheckCosPACasc->Fill(cpaCascLF,cpaCasc);
+      float cpaV0FromLF = cpaV0;
+      float cpaCascFromLF = cpaCasc;
 
       // computing decay length and ctau
       double decLenCharmBaryon = RecoDecay::distance(pvCoord, coordVtxCharmBaryon);
@@ -330,7 +324,7 @@ struct HfCandidateCreatorToXiPi {
                    vertexCasc[0], vertexCasc[1], vertexCasc[2],
                    vertexV0[0], vertexV0[1], vertexV0[2],
                    trackXiDauCharged.sign(),
-                   chi2PCACharmBaryon, covVtxCharmBaryon[0], covVtxCharmBaryon[1], covVtxCharmBaryon[2], covVtxCharmBaryon[3], covVtxCharmBaryon[4], covVtxCharmBaryon[5],
+                   covVtxCharmBaryon[0], covVtxCharmBaryon[1], covVtxCharmBaryon[2], covVtxCharmBaryon[3], covVtxCharmBaryon[4], covVtxCharmBaryon[5],
                    pVecCharmBaryon[0], pVecCharmBaryon[1], pVecCharmBaryon[2],
                    pVecCasc[0], pVecCasc[1], pVecCasc[2],
                    pVecPionFromCharmBaryon[0], pVecPionFromCharmBaryon[1], pVecPionFromCharmBaryon[2],
@@ -341,7 +335,7 @@ struct HfCandidateCreatorToXiPi {
                    impactParameterCasc.getY(), impactParPiFromCharmBaryonXY,
                    impactParameterCasc.getZ(), impactParPiFromCharmBaryonZ,
                    std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterPiFromCharmBaryon.getSigmaY2()),
-                   casc.v0Id(), v0.posTrackId(), v0.negTrackId(),
+                   v0index, casc.posTrackId(), casc.negTrackId(),
                    casc.cascadeId(), trackPion.globalIndex(), casc.bachelorId(),
                    mLambda, mCasc, mCharmBaryon,
                    cpaV0, cpaCharmBaryon, cpaCasc, cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
@@ -352,18 +346,17 @@ struct HfCandidateCreatorToXiPi {
                    dcazV0Dau0, dcazV0Dau1, dcazPiFromCasc,
                    dcaCascDau, dcaV0Dau, dcaCharmBaryonDau,
                    decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon,
-                   isPiAmb, hfFlag, cpaV0LF, cpaCascLF);
+                   isPiAmb, hfFlag, cpaV0FromLF, cpaCascFromLF);
 
     } // loop over LF Cascade-bachelor candidates
   }   // end of process
   PROCESS_SWITCH(HfCandidateCreatorToXiPi, processRegularCasc, "Process regular cascades", true);
 
 
-    void processTrackedCasc(aod::Collisions const&,
+    /*void processTrackedCasc(aod::Collisions const&,
                           aod::BCsWithTimestamps const&,
                           MyTracks const&,
                           MyCascTableStrTrk const&, CascadesLinked const&,
-                          MyV0Table const&, V0sLinked const&,
                           MySkimIdx const& candidates)
   {
 
@@ -411,12 +404,16 @@ struct HfCandidateCreatorToXiPi {
 
       auto trackPion = cand.prong0_as<MyTracks>();
       auto cascAodElement = cand.cascade_as<aod::CascadesLinked>();
+      hCascadesCounter->Fill(0);
+      int v0index = cascAodElement.v0Id();
+      if (!cascAodElement.has_cascData())
+        continue;
       auto casc = cascAodElement.cascData_as<MyCascTableStrTrk>();
+      hCascadesCounter->Fill(1);
+
       auto trackXiDauCharged = casc.bachelor_as<MyTracks>(); // pion <- xi track
-      auto v0AodElement = casc.v0_as<aod::V0sLinked>();
-      auto v0 = v0AodElement.v0Data_as<MyV0Table>();      // V0 <-- xi
-      auto trackV0Dau0 = v0.posTrack_as<MyTracks>(); // V0 positive daughter track
-      auto trackV0Dau1 = v0.negTrack_as<MyTracks>(); // V0 negative daughter track
+      auto trackV0Dau0 = casc.posTrack_as<MyTracks>(); // V0 positive daughter track
+      auto trackV0Dau1 = casc.negTrack_as<MyTracks>(); // V0 negative daughter track
 
       //------------- is pi <- charm track ambiguous ----------------
       if(trackPion.compatibleCollIds().size() > 1) {
@@ -525,19 +522,22 @@ struct HfCandidateCreatorToXiPi {
       const std::array<double, 2> arrMassCharmBaryon = {massXiFromPDG, massPionFromPDG};
       double mCharmBaryon = RecoDecay::m(std::array{pVecCascAsD, pVecPionFromCharmBaryon}, arrMassCharmBaryon);
 
+      // cosPA from LF table
+      float cpaV0FromLF = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+      float cpaCascFromLF = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
+
       // computing cosPA
-      double cpaV0 = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
+      //double cpaV0 = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
+      double cpaV0 = cpaV0FromLF;
       double cpaCharmBaryon = RecoDecay::cpa(pvCoord, coordVtxCharmBaryon, pVecCharmBaryon);
-      double cpaCasc = RecoDecay::cpa(coordVtxCharmBaryon, vertexCasc, pVecCasc);
+      //double cpaCasc = RecoDecay::cpa(coordVtxCharmBaryon, vertexCasc, pVecCasc);
+      double cpaCasc = cpaCascFromLF;
       double cpaxyV0 = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
       double cpaxyCharmBaryon = RecoDecay::cpaXY(pvCoord, coordVtxCharmBaryon, pVecCharmBaryon);
       double cpaxyCasc = RecoDecay::cpaXY(coordVtxCharmBaryon, vertexCasc, pVecCasc);
 
-      // cosPA from LF table
-      float cpaV0LF = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
-      float cpaCascLF = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
-      hCheckCosPAV0->Fill(cpaV0LF,cpaV0);
-      hCheckCosPACasc->Fill(cpaCascLF,cpaCasc);
+      hCheckCosPAV0->Fill(cpaV0FromLF,cpaV0);
+      hCheckCosPACasc->Fill(cpaCascFromLF,cpaCasc);
 
       // computing decay length and ctau
       double decLenCharmBaryon = RecoDecay::distance(pvCoord, coordVtxCharmBaryon);
@@ -589,7 +589,7 @@ struct HfCandidateCreatorToXiPi {
                    impactParameterCasc.getY(), impactParPiFromCharmBaryonXY,
                    impactParameterCasc.getZ(), impactParPiFromCharmBaryonZ,
                    std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterPiFromCharmBaryon.getSigmaY2()),
-                   casc.v0Id(), v0.posTrackId(), v0.negTrackId(),
+                   v0index, casc.posTrackId(), casc.negTrackId(),
                    casc.cascadeId(), trackPion.globalIndex(), casc.bachelorId(),
                    mLambda, mCasc, mCharmBaryon,
                    cpaV0, cpaCharmBaryon, cpaCasc, cpaxyV0, cpaxyCharmBaryon, cpaxyCasc,
@@ -600,11 +600,11 @@ struct HfCandidateCreatorToXiPi {
                    dcazV0Dau0, dcazV0Dau1, dcazPiFromCasc,
                    dcaCascDau, dcaV0Dau, dcaCharmBaryonDau,
                    decLenCharmBaryon, decLenCascade, decLenV0, errorDecayLengthCharmBaryon, errorDecayLengthXYCharmBaryon,
-                   isPiAmb, hfFlag, cpaV0LF, cpaCascLF);
+                   isPiAmb, hfFlag, cpaV0FromLF, cpaCascFromLF);
 
     } // loop over LF Cascade-bachelor candidates
   }   // end of process
-  PROCESS_SWITCH(HfCandidateCreatorToXiPi, processTrackedCasc, "Process tracked cascades", false);
+  PROCESS_SWITCH(HfCandidateCreatorToXiPi, processTrackedCasc, "Process tracked cascades", false);*/
 
 
 };    // end of struct
@@ -1057,7 +1057,13 @@ struct HfCandidateCreatorToXiPiAmbTrk {
     int8_t sign = -9;
     int8_t flag = -9;
 
+    float ptXicGen = -999.;
+    float ptPionFromXicGen = -999.;
+
     for (const auto& trk : trks) { //loop over reconstructed tracks
+
+      ptXicGen = -999.;
+      ptPionFromXicGen = -999.;
 
       if (!trk.has_mcParticle()) {
         continue;
@@ -1074,6 +1080,7 @@ struct HfCandidateCreatorToXiPiAmbTrk {
       for(auto& particleMother : particleFromDecay.mothers_as<aod::McParticles>()){ //loop over mothers of particleFromDecay (gen level info)
 
       if (RecoDecay::isMatchedMCGen(particlesMC, particleMother, pdgCodeXic0, std::array{pdgCodeXiMinus, pdgCodePiPlus}, true, &sign)) {
+          ptXicGen = particleMother.pt();
           // Match Xi -> lambda pi
           auto cascMC = particlesMC.rawIteratorAt(particleMother.daughtersIds().front());
           // Printf("Checking cascade → lambda pi");
@@ -1082,6 +1089,7 @@ struct HfCandidateCreatorToXiPiAmbTrk {
             auto v0MC = particlesMC.rawIteratorAt(cascMC.daughtersIds().front());
             if (RecoDecay::isMatchedMCGen(particlesMC, v0MC, pdgCodeLambda, std::array{pdgCodeProton, pdgCodePiMinus}, true)) {
               flag = sign * (1 << aod::hf_cand_toxipi::DecayType::XiczeroToXiPi);
+              ptPionFromXicGen = particleFromDecay.pt();
             }
           }
         }
@@ -1089,7 +1097,7 @@ struct HfCandidateCreatorToXiPiAmbTrk {
 
       if(std::abs(flag)==4){ // I am dealing with a xic0 decaying properly
 
-        rowAmbTrkExtra(trk.compatibleCollIds().size(), trk.isPVContributor(), trk.isGlobalTrackWoDCA(), trk.isQualityTrackITS(), trk.trackType(), trk.tpcNClsCrossedRows(), trk.tpcCrossedRowsOverFindableCls(), trk.tpcChi2NCl(), trk.hasTPC(), trk.itsChi2NCl(), trk.hasITS(), trk.itsNClsInnerBarrel(), trk.pt(), trk.eta(), particleFromDecay.px(), particleFromDecay.py(), particleFromDecay.pz(), trk.px(), trk.py(), trk.pz());
+        rowAmbTrkExtra(trk.compatibleCollIds().size(), trk.isPVContributor(), trk.isGlobalTrackWoDCA(), trk.isQualityTrackITS(), trk.trackType(), trk.tpcNClsCrossedRows(), trk.tpcCrossedRowsOverFindableCls(), trk.tpcChi2NCl(), trk.hasTPC(), trk.itsChi2NCl(), trk.hasITS(), trk.itsNClsInnerBarrel(), trk.pt(), trk.eta(), particleFromDecay.px(), particleFromDecay.py(), particleFromDecay.pz(), trk.px(), trk.py(), trk.pz(), ptXicGen, ptPionFromXicGen);
 
       }
     }
@@ -1211,7 +1219,7 @@ struct HfCandidateCreatorToXiPiMc {
     bool collisionMatched = false;
 
     int pdgCodeOmegac0 = Pdg::kOmegaC0;       // 4332
-    int pdgCodeXic0 = Pdg::kXiCZero;          // 4132
+    int pdgCodeXic0 = Pdg::kXiC0;          // 4132
     int pdgCodeXiMinus = kXiMinus;            // 3312
     int pdgCodeLambda = kLambda0;             // 3122
     int pdgCodePiPlus = kPiPlus;              // 211

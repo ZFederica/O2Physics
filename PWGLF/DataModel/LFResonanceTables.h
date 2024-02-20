@@ -35,6 +35,10 @@ namespace resocollision
 DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality (Multiplicity) percentile (Default: FT0M)
 DECLARE_SOA_COLUMN(Mult, mult, int);               //! FT0 multiplicity
 DECLARE_SOA_COLUMN(Spherocity, spherocity, float); //! Spherocity of the event
+DECLARE_SOA_COLUMN(EvtPl, evtPl, float);           //! Second harmonic event plane
+DECLARE_SOA_COLUMN(EvtPlResAB, evtPlResAB, float); //! Second harmonic event plane resolution of A-B sub events
+DECLARE_SOA_COLUMN(EvtPlResAC, evtPlResAC, float); //! Second harmonic event plane resolution of A-C sub events
+DECLARE_SOA_COLUMN(EvtPlResBC, evtPlResBC, float); //! Second harmonic event plane resolution of B-C sub events
 DECLARE_SOA_COLUMN(BMagField, bMagField, float);   //! Magnetic field
 } // namespace resocollision
 DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOL",
@@ -45,6 +49,10 @@ DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOL",
                   resocollision::Cent,
                   resocollision::Mult,
                   resocollision::Spherocity,
+                  resocollision::EvtPl,
+                  resocollision::EvtPlResAB,
+                  resocollision::EvtPlResAC,
+                  resocollision::EvtPlResBC,
                   resocollision::BMagField,
                   timestamp::Timestamp);
 using ResoCollision = ResoCollisions::iterator;
@@ -64,6 +72,7 @@ DECLARE_SOA_COLUMN(Phi, phi, float);                                 //! Phi
 DECLARE_SOA_COLUMN(PartType, partType, uint8_t);                     //! Type of the particle, according to resodaughter::ParticleType
 DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);                   //! Observable for the template fitting (Track: DCA_xy, V0: CPA)
 DECLARE_SOA_COLUMN(Indices, indices, int[2]);                        //! Field for the track indices to remove auto-correlations
+DECLARE_SOA_COLUMN(CascadeIndices, cascIndices, int[3]);             //! Field for the track indices to remove auto-correlations (ordered: positive, negative, bachelor)
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                              //! Sign of the track charge
 DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t); //! Number of TPC crossed rows
 DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);    //! Is global track without DCA
@@ -164,7 +173,7 @@ DECLARE_SOA_TABLE(ResoCascades, "AOD", "RESOCASCADES",
                   resodaughter::Pz,
                   resodaughter::Eta,
                   resodaughter::Phi,
-                  resodaughter::Indices,
+                  resodaughter::CascadeIndices,
                   resodaughter::V0CosPA,
                   resodaughter::CascCosPA,
                   resodaughter::DaughDCA,

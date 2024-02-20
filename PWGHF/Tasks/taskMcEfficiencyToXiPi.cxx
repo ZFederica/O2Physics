@@ -135,7 +135,7 @@ struct HfTaskMcEfficiencyToXiPi {
     double pt = 0.0;
 
     int decayFlag = 0;
-    if(pdgCode == Pdg::kXiCZero){
+    if(pdgCode == Pdg::kXiC0){
       decayFlag = 4;
     } else if (pdgCode == Pdg::kOmegaC0){
       decayFlag = 2;
@@ -221,7 +221,7 @@ struct HfTaskMcEfficiencyToXiPi {
       auto mass = pdg->Mass(pdgCode);
 
       int decayFlagGen = 0;
-      if(pdgCode == Pdg::kXiCZero){
+      if(pdgCode == Pdg::kXiC0){
         decayFlagGen = 4;
       } else if (pdgCode == Pdg::kOmegaC0){
         decayFlagGen = 2;
@@ -419,7 +419,7 @@ struct HfTaskMcEfficiencyToXiPi {
                    TracksWithSelectionMC const& tracks,
                    aod::McCollisionLabels const& colls)
   {
-    int pdgCode = Pdg::kXiCZero;
+    int pdgCode = Pdg::kXiC0;
     candidateFullLoop(candidates, genParticles, tracks, colls, pdgCode);
   }
   PROCESS_SWITCH(HfTaskMcEfficiencyToXiPi, processXic0, "Process MC for Xic0 signal", true);

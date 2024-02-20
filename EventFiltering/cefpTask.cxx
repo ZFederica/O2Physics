@@ -10,16 +10,16 @@
 // or submit itself to any jurisdiction.
 // O2 includes
 
+#include <fmt/format.h>
+#include <rapidjson/document.h>
+#include <rapidjson/filereadstream.h>
+
 #include <iostream>
 #include <cstdio>
 #include <random>
 #include <string>
 #include <string_view>
 #include <vector>
-
-#include <fmt/format.h>
-#include <rapidjson/document.h>
-#include <rapidjson/filereadstream.h>
 
 #include "filterTables.h"
 
@@ -201,10 +201,10 @@ static const float defaultDownscaling[128][1]{
   {1.f},
   {1.f}}; /// Max number of columns for triggers is 128 (extendible)
 
-#define FILTER_CONFIGURABLE(_TYPE_)                                                                                                                                              \
-  Configurable<LabeledArray<float>> cfg##_TYPE_                                                                                                                                  \
-  {                                                                                                                                                                              \
-#_TYPE_, {defaultDownscaling[0], NumberOfColumns < _TYPE_>(), 1, ColumnsNames(typename _TYPE_::iterator::persistent_columns_t{}), downscalingName }, #_TYPE_ " downscalings" \
+#define FILTER_CONFIGURABLE(_TYPE_)                                                                                                                                                         \
+  Configurable<LabeledArray<float>> cfg##_TYPE_                                                                                                                                             \
+  {                                                                                                                                                                                         \
+#_TYPE_, {defaultDownscaling[0], NumberOfColumns(typename _TYPE_::table_t::columns{}), 1, ColumnsNames(typename _TYPE_::table_t::columns{}), downscalingName }, #_TYPE_ " downscalings" \
   }
 
 } // namespace
@@ -226,7 +226,7 @@ struct centralEventFilterTask {
   FILTER_CONFIGURABLE(StrangenessFilters);
   FILTER_CONFIGURABLE(MultFilters);
   FILTER_CONFIGURABLE(FullJetFilters);
-  FILTER_CONFIGURABLE(PhotFilters);
+  FILTER_CONFIGURABLE(PhotonFilters);
 
   int mRunNumber{-1};
   o2::InteractionRecord mEndOfITSramp{0, 0};
