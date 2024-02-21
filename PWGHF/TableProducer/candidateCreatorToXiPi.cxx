@@ -352,8 +352,7 @@ struct HfCandidateCreatorToXiPi {
   }   // end of process
   PROCESS_SWITCH(HfCandidateCreatorToXiPi, processRegularCasc, "Process regular cascades", true);
 
-
-    /*void processTrackedCasc(aod::Collisions const&,
+  void processTrackedCasc(aod::Collisions const&,
                           aod::BCsWithTimestamps const&,
                           MyTracks const&,
                           MyCascTableStrTrk const&, CascadesLinked const&,
@@ -415,11 +414,6 @@ struct HfCandidateCreatorToXiPi {
       auto trackV0Dau0 = casc.posTrack_as<MyTracks>(); // V0 positive daughter track
       auto trackV0Dau1 = casc.negTrack_as<MyTracks>(); // V0 negative daughter track
 
-      //------------- is pi <- charm track ambiguous ----------------
-      if(trackPion.compatibleCollIds().size() > 1) {
-        isPiAmb = true;
-      }
-
       //-------------------------- V0 info---------------------------
       // pseudorapidity
       double pseudorapV0Dau0 = trackV0Dau0.eta();
@@ -477,7 +471,6 @@ struct HfCandidateCreatorToXiPi {
       hFitterStatus->Fill(0);
       hCandidateCounter->Fill(2);
       auto vertexCharmBaryonFromFitter = df.getPCACandidate();
-      auto chi2PCACharmBaryon = df.getChi2AtPCACandidate();
       std::array<float, 3> pVecCascAsD;
       std::array<float, 3> pVecPionFromCharmBaryon;
       df.propagateTracksToVertex();
@@ -522,22 +515,16 @@ struct HfCandidateCreatorToXiPi {
       const std::array<double, 2> arrMassCharmBaryon = {massXiFromPDG, massPionFromPDG};
       double mCharmBaryon = RecoDecay::m(std::array{pVecCascAsD, pVecPionFromCharmBaryon}, arrMassCharmBaryon);
 
-      // cosPA from LF table
-      float cpaV0FromLF = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
-      float cpaCascFromLF = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
-
       // computing cosPA
-      //double cpaV0 = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
-      double cpaV0 = cpaV0FromLF;
+      double cpaV0 = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
       double cpaCharmBaryon = RecoDecay::cpa(pvCoord, coordVtxCharmBaryon, pVecCharmBaryon);
-      //double cpaCasc = RecoDecay::cpa(coordVtxCharmBaryon, vertexCasc, pVecCasc);
-      double cpaCasc = cpaCascFromLF;
-      double cpaxyV0 = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
+      double cpaCasc = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
+      double cpaxyV0 = RecoDecay::cpaXY(pvCoord, vertexV0, pVecV0);
       double cpaxyCharmBaryon = RecoDecay::cpaXY(pvCoord, coordVtxCharmBaryon, pVecCharmBaryon);
       double cpaxyCasc = RecoDecay::cpaXY(coordVtxCharmBaryon, vertexCasc, pVecCasc);
 
-      hCheckCosPAV0->Fill(cpaV0FromLF,cpaV0);
-      hCheckCosPACasc->Fill(cpaCascFromLF,cpaCasc);
+      float cpaV0FromLF = cpaV0;
+      float cpaCascFromLF = cpaCasc;
 
       // computing decay length and ctau
       double decLenCharmBaryon = RecoDecay::distance(pvCoord, coordVtxCharmBaryon);
@@ -578,7 +565,7 @@ struct HfCandidateCreatorToXiPi {
                    vertexCasc[0], vertexCasc[1], vertexCasc[2],
                    vertexV0[0], vertexV0[1], vertexV0[2],
                    trackXiDauCharged.sign(),
-                   chi2PCACharmBaryon, covVtxCharmBaryon[0], covVtxCharmBaryon[1], covVtxCharmBaryon[2], covVtxCharmBaryon[3], covVtxCharmBaryon[4], covVtxCharmBaryon[5],
+                   covVtxCharmBaryon[0], covVtxCharmBaryon[1], covVtxCharmBaryon[2], covVtxCharmBaryon[3], covVtxCharmBaryon[4], covVtxCharmBaryon[5],
                    pVecCharmBaryon[0], pVecCharmBaryon[1], pVecCharmBaryon[2],
                    pVecCasc[0], pVecCasc[1], pVecCasc[2],
                    pVecPionFromCharmBaryon[0], pVecPionFromCharmBaryon[1], pVecPionFromCharmBaryon[2],
@@ -604,7 +591,8 @@ struct HfCandidateCreatorToXiPi {
 
     } // loop over LF Cascade-bachelor candidates
   }   // end of process
-  PROCESS_SWITCH(HfCandidateCreatorToXiPi, processTrackedCasc, "Process tracked cascades", false);*/
+  PROCESS_SWITCH(HfCandidateCreatorToXiPi, processTrackedCasc, "Process tracked cascades", false);
+
 
 
 };    // end of struct

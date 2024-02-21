@@ -3717,13 +3717,13 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
   PROCESS_SWITCH(HfTrackIndexSkimCreatorLfCascades, processLfCascades, "Skim HF -> LF cascade + bachelor", false);
 
-  /*void processLfCascadesStrTrk(SelectedCollisions const& collisions,
-                         CascFullStrTrk const& cascades,
-                         SelectedHfTrackAssoc const& trackIndices,
-                         aod::TracksWCovDca const& tracks,
-                         aod::BCsWithTimestamps const&,
-                         aod::V0sLinked const&,
-                         V0Full const&)
+
+  void processLfCascadesStrTrk(SelectedCollisions const& collisions,
+                                CascFullStrTrk const& cascades,
+                                SelectedHfTrackAssoc const& trackIndices,
+                                aod::TracksWCovDca const& tracks,
+                                aod::BCsWithTimestamps const&,
+                                V0Full const&)
   {
 
     // Define o2 fitter for charm baryon decay vertex, 2prong
@@ -3773,16 +3773,9 @@ struct HfTrackIndexSkimCreatorLfCascades {
         // cascade daughter - charged particle
         auto trackXiDauCharged = casc.bachelor_as<aod::TracksWCovDca>(); // pion <- xi track
         // cascade daughter - V0
-        if (!casc.v0_as<aod::V0sLinked>().has_v0Data()) { // check if V0 data are stored
-          continue;
-        }
-        registry.fill(HIST("hCandidateCounter"), 1.5); // v0data exists
-        auto v0 = casc.v0_as<aod::V0sLinked>();
-        auto v0Element = v0.v0Data_as<V0Full>(); // V0 element from LF table containing V0 info
-        // V0 positive daughter
-        auto trackV0PosDau = v0Element.posTrack_as<aod::TracksWCovDca>(); // p <- V0 track (positive track) 0
+        auto trackV0PosDau = casc.posTrack_as<aod::TracksWCovDca>(); // p <- V0 track (positive track) 0
         // V0 negative daughter
-        auto trackV0NegDau = v0Element.negTrack_as<aod::TracksWCovDca>(); // pion <- V0 track (negative track) 1
+        auto trackV0NegDau = casc.negTrack_as<aod::TracksWCovDca>(); // pion <- V0 track (negative track) 1
 
         // check that particles come from the same collision
         if (rejDiffCollTrack) {
@@ -3834,10 +3827,6 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
           hfFlag = 0;
 
-          if (!TESTBIT(trackIdPion1.isSelProng(), CandidateType::CandCascadeBachelor)) {
-            continue;
-          }
-
           auto trackPion1 = trackIdPion1.track_as<aod::TracksWCovDca>();
 
           if ((rejDiffCollTrack) && (trackXiDauCharged.collisionId() != trackPion1.collisionId())) {
@@ -3858,7 +3847,19 @@ struct HfTrackIndexSkimCreatorLfCascades {
           auto trackParVarPion1 = getTrackParCov(trackPion1);
 
           // find charm baryon decay using xi PID hypothesis
-          int nVtxFrom2ProngFitterXiHyp = df2.process(trackCascXi2Prong, trackParVarPion1);
+          int nVtxFrom2ProngFitterXiHyp = 0;
+          try {
+            nVtxFrom2ProngFitterXiHyp = df2.process(trackCascXi2Prong, trackParVarPion1);
+          } catch (...) {
+            if (fillHistograms) {
+              registry.fill(HIST("hFitterStatusXi2Prong"), 1);
+            }
+            continue;
+          }
+          if (fillHistograms) {
+            registry.fill(HIST("hFitterStatusXi2Prong"), 0);
+          }
+
           if (nVtxFrom2ProngFitterXiHyp > 0) {
 
             df2.propagateTracksToVertex();
@@ -3886,7 +3887,19 @@ struct HfTrackIndexSkimCreatorLfCascades {
           }
 
           // find charm baryon decay using omega PID hypothesis
-          int nVtxFrom2ProngFitterOmegaHyp = df2.process(trackCascOmega, trackParVarPion1);
+          int nVtxFrom2ProngFitterOmegaHyp = 0;
+          try {
+            nVtxFrom2ProngFitterOmegaHyp = df2.process(trackCascOmega, trackParVarPion1);
+          } catch (...) {
+            if (fillHistograms) {
+              registry.fill(HIST("hFitterStatusOmega2Prong"), 1);
+            }
+            continue;
+          }
+          if (fillHistograms) {
+            registry.fill(HIST("hFitterStatusOmega2Prong"), 0);
+          }
+
           if (nVtxFrom2ProngFitterOmegaHyp > 0) {
 
             df2.propagateTracksToVertex();
@@ -3954,7 +3967,19 @@ struct HfTrackIndexSkimCreatorLfCascades {
               auto trackParVarPion2 = getTrackParCov(trackPion2);
 
               // reconstruct Xic with DCAFitter
-              int nVtxFrom3ProngFitterXiHyp = df3.process(trackCascXi3Prong, trackParVarPion1, trackParVarPion2);
+              int nVtxFrom3ProngFitterXiHyp = 0;
+              try {
+                nVtxFrom3ProngFitterXiHyp = df3.process(trackCascXi3Prong, trackParVarPion1, trackParVarPion2);
+              } catch (...) {
+                if (fillHistograms) {
+                  registry.fill(HIST("hFitterStatusXi3Prong"), 1);
+                }
+                continue;
+              }
+              if (fillHistograms) {
+                registry.fill(HIST("hFitterStatusXi3Prong"), 0);
+              }
+
               if (nVtxFrom3ProngFitterXiHyp > 0) {
 
                 df3.propagateTracksToVertex();
@@ -4000,7 +4025,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
     }     // loop over collisions
   }       // processLfCascades
 
-  PROCESS_SWITCH(HfTrackIndexSkimCreatorLfCascades, processLfCascadesStrTrk, "Skim HF -> LF cascade + bachelor using strangeness tracking", false);*/
+  PROCESS_SWITCH(HfTrackIndexSkimCreatorLfCascades, processLfCascadesStrTrk, "Skim HF -> LF cascade + bachelor using strangeness tracking", false);
 
 
 };
