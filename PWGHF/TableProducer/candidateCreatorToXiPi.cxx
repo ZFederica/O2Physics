@@ -106,9 +106,9 @@ struct HfCandidateCreatorToXiPi {
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));
     runNumber = 0;
 
-    /*if (doprocessRegularCasc == true && doprocessTrackedCasc == true) {
+    if (doprocessRegularCasc == true && doprocessTrackedCasc == true) {
       LOGF(fatal, "Cannot enable processRegularCasc and processTrackedCasc at the same time. Please choose one.");
-    }*/
+    }
   }
 
   void processRegularCasc(aod::Collisions const&,
